@@ -5,8 +5,13 @@
 <title>Enthalpy – Cold & Critical Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="icon" href="/assets/favicon.png">
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+
+<!-- Font -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -20,6 +25,7 @@
   --warn:#f1c40f;
   --risk:#e74c3c;
 }
+
 *{box-sizing:border-box}
 body{
   margin:0;
@@ -27,6 +33,7 @@ body{
   background:var(--bg);
   color:var(--dark);
 }
+
 .container{
   max-width:1200px;
   margin:auto;
@@ -129,7 +136,6 @@ nav{
   font-size:12px;
   cursor:pointer;
   background:#eef3ff;
-  color:var(--dark);
 }
 .dashboard-menu button.active{
   background:var(--blue);
@@ -144,12 +150,10 @@ nav{
 .alert.warn{color:var(--warn)}
 .alert.risk{color:var(--risk)}
 
-canvas{height:140px !important}
+canvas{height:140px!important}
 
 /* SECTIONS */
-section{
-  padding:80px 0;
-}
+section{padding:80px 0}
 .section-title{
   font-size:34px;
   margin-bottom:16px;
@@ -164,6 +168,33 @@ section{
   border-radius:18px;
   padding:20px;
   box-shadow:0 14px 40px rgba(6,19,37,.08);
+}
+
+/* POPUP */
+#popup{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  z-index:999;
+}
+.popup-content{
+  background:#fff;
+  max-width:680px;
+  margin:4% auto;
+  border-radius:20px;
+  padding:20px;
+  position:relative;
+}
+.popup-content h3{margin-top:0}
+.close{
+  position:absolute;
+  top:14px;
+  right:18px;
+  border:none;
+  background:none;
+  font-size:22px;
+  cursor:pointer;
 }
 
 /* RESPONSIVE */
@@ -186,39 +217,28 @@ section{
           <span>COLD & CRITICAL MONITORING</span>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="openPopup()">
-  Request pilot access
-</button>
+      <button class="btn btn-primary" onclick="openPopup()">Request pilot access</button>
     </nav>
   </div>
 </header>
 
-<!-- HERO -->
 <section class="hero">
   <div class="container">
     <div class="hero-grid">
 
-      <!-- LEFT -->
       <div>
-        <h1>
-          Sensors you can trust.<br>
-          <span>Evidence you can prove.</span>
-        </h1>
+        <h1>Sensors you can trust.<br><span>Evidence you can prove.</span></h1>
         <p>
-          Enthalpy combines <strong>multi-sensor IoT monitoring</strong>
-          (temperature, humidity, vibration, CO₂)
-          with a <strong>blockchain-secured ledger</strong>
-          to protect cold chains and critical assets.
+          Enthalpy combines <strong>IoT sensors</strong> and a
+          <strong>blockchain-secured ledger</strong> to protect cold chains
+          and critical assets.
         </p>
-        <p>
-          Sensors detect. Blockchain proves.
-        </p>
+        <button class="btn btn-primary" onclick="openPopup()">Request pilot access</button>
       </div>
 
-      <!-- RIGHT DASHBOARD -->
       <div class="dashboard">
         <div class="dashboard-header">
-          <strong>Live Monitoring</strong>
+          <strong>Live monitoring</strong>
           <div class="status"><div class="dot"></div>Sensors online</div>
         </div>
 
@@ -230,7 +250,6 @@ section{
         </div>
 
         <div id="alert" class="alert ok">Status: Normal range</div>
-
         <canvas id="chart"></canvas>
       </div>
 
@@ -243,26 +262,39 @@ section{
   <div class="container">
     <h2 class="section-title">Industries where a few degrees cost millions</h2>
     <div class="grid-3">
-      <div class="card"><h3>Pharma & Biotech</h3><p>GMP/GDP, audit-ready traceability.</p></div>
-      <div class="card"><h3>Food & Frozen</h3><p>Prevent cold-chain breaks.</p></div>
+      <div class="card"><h3>Pharma & Biotech</h3><p>Audit-ready traceability.</p></div>
+      <div class="card"><h3>Food & Frozen</h3><p>Prevent cold-chain failures.</p></div>
       <div class="card"><h3>Logistics & 3PL</h3><p>Proof of compliance.</p></div>
     </div>
   </div>
 </section>
 
-<!-- TECHNOLOGY -->
-<section>
-  <div class="container">
-    <h2 class="section-title">Technology built for trust</h2>
-    <div class="grid-3">
-      <div class="card"><h3>IoT Sensors</h3><p>Multi-physics, real-time, calibrated.</p></div>
-      <div class="card"><h3>Blockchain Ledger</h3><p>Tamper-proof, time-stamped evidence.</p></div>
-      <div class="card"><h3>Alerts & Analytics</h3><p>Detect issues before losses happen.</p></div>
-    </div>
+<!-- POPUP FORM -->
+<div id="popup">
+  <div class="popup-content">
+    <button class="close" onclick="closePopup()">×</button>
+    <h3>Request Pilot Access</h3>
+    <p style="font-size:13px;color:#6c7a92">
+      Tell us about your company and use case.
+    </p>
+
+    <!-- GOOGLE FORM EMBED -->
+    <iframe
+      src="https://docs.google.com/forms/d/e/1FAIpQLSeKqc44-iXAAwxkk2NEWLodNMkshh4u31NP1bWBRvmAcu1GIA/viewform?embedded=true"
+      width="100%"
+      height="520"
+      frameborder="0"
+      marginheight="0"
+      marginwidth="0">
+      Chargement…
+    </iframe>
   </div>
-</section>
+</div>
 
 <script>
+function openPopup(){document.getElementById('popup').style.display='block'}
+function closePopup(){document.getElementById('popup').style.display='none'}
+
 const ctx=document.getElementById('chart');
 let chart=new Chart(ctx,{
   type:'line',
@@ -282,52 +314,19 @@ function switchMetric(type){
     .forEach(b=>b.classList.remove('active'));
   event.target.classList.add('active');
 
-  let data, alertText, alertClass;
-
-  if(type==='temp'){data=[4.2,4.4,5.8,6.1,5.2,4.6];alertText='Warning: Temperature excursion';alertClass='warn'}
-  if(type==='hum'){data=[45,46,44,43,42,41];alertText='Status: Normal humidity';alertClass='ok'}
-  if(type==='vib'){data=[1,2,8,6,2,1];alertText='Risk: Shock detected';alertClass='risk'}
-  if(type==='co2'){data=[400,420,480,650,720,680];alertText='Warning: CO₂ rising';alertClass='warn'}
+  let data, text, cls;
+  if(type==='temp'){data=[4.2,4.4,5.8,6.1,5.2,4.6];text='Warning: Temperature excursion';cls='warn'}
+  if(type==='hum'){data=[45,46,44,43,42,41];text='Status: Normal humidity';cls='ok'}
+  if(type==='vib'){data=[1,2,8,6,2,1];text='Risk: Shock detected';cls='risk'}
+  if(type==='co2'){data=[400,420,480,650,720,680];text='Warning: CO₂ rising';cls='warn'}
 
   chart.data.datasets[0].data=data;
   chart.update();
 
   const alert=document.getElementById('alert');
-  alert.textContent=alertText;
-  alert.className='alert '+alertClass;
+  alert.textContent=text;
+  alert.className='alert '+cls;
 }
-</script>
-<div id="popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;">
-  <div style="
-    background:#fff;
-    max-width:520px;
-    margin:5% auto;
-    border-radius:18px;
-    padding:20px;
-    position:relative;
-  ">
-    <button onclick="closePopup()" style="
-      position:absolute;top:10px;right:14px;
-      background:none;border:none;font-size:20px;cursor:pointer
-    ">×</button>
-
-    <h3>Request Pilot Access</h3>
-    <p style="font-size:13px;color:#6c7a92">
-      Tell us about your company and use case.
-    </p>
-
-    <!-- GOOGLE FORM EMBED -->
-    <iframe 
-      src="https://forms.gle/aY43vnrM6enkbATx8"
-      width="100%" height="420"
-      frameborder="0">
-    </iframe>
-  </div>
-</div>
-
-<script>
-function openPopup(){document.getElementById('popup').style.display='block'}
-function closePopup(){document.getElementById('popup').style.display='none'}
 </script>
 
 </body>
