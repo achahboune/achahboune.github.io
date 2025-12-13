@@ -325,6 +325,26 @@ function switchMetric(type){
   alert.className='alert '+cls;
 }
 </script>
+<script>
+  const formURL =
+    "https://docs.google.com/forms/d/e/1FAIpQLSeKqc44-iXAAwxkk2NEWLodNMkshh4u31NP1bWBRvmAcu1GIA/viewform?embedded=true";
+
+  function openPopup() {
+    const iframe = document.getElementById("earlyAccessForm");
+
+    // Force reload of the form
+    iframe.src = "";
+    setTimeout(() => {
+      iframe.src = formURL;
+    }, 50);
+
+    document.getElementById("popup-overlay").classList.add("active");
+  }
+
+  function closePopup() {
+    document.getElementById("popup-overlay").classList.remove("active");
+  }
+</script>
 
 </body>
 </html>
