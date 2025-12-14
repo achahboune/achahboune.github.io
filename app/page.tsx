@@ -14,13 +14,10 @@ export default function Page() {
 
   const [metric, setMetric] = useState<Metric>("temp")
   const [popupOpen, setPopupOpen] = useState(false)
-  const [iframeSrc, setIframeSrc] = useState<string>("")
+  const [iframeSrc, setIframeSrc] = useState("")
 
-  const metricConfig = useMemo(() => {
-    const cfg: Record<
-      Metric,
-      { label: string; data: number[]; text: string; cls: "ok" | "warn" | "risk" }
-    > = {
+  const metricConfig = useMemo(
+    () => ({
       temp: {
         label: "Temp",
         data: [4.2, 4.4, 5.8, 6.1, 5.2, 4.6],
@@ -45,11 +42,10 @@ export default function Page() {
         text: "Warning: CO₂ rising",
         cls: "warn",
       },
-    }
-    return cfg
-  }, [])
+    }),
+    []
+  )
 
-  // Create chart once
   useEffect(() => {
     if (!canvasRef.current) return
     const ctx = canvasRef.current.getContext("2d")
@@ -61,7 +57,7 @@ export default function Page() {
         labels: ["00h", "04h", "08h", "12h", "16h", "20h"],
         datasets: [
           {
-            data: [4.2, 4.3, 4.5, 4.4, 4.6, 4.3],
+            data: metricConfig.temp.data,
             borderColor: "#1b73ff",
             tension: 0.4,
           },
@@ -71,52 +67,36 @@ export default function Page() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false } },
-          y: { grid: { color: "rgba(0,0,0,.06)" } },
-        },
       },
     })
 
-    return () => {
-      chartRef.current?.destroy()
-      chartRef.current = null
-    }
-  }, [])
+    return () => chartRef.current?.destroy()
+  }, [metricConfig])
 
-  // Update chart on metric change
   useEffect(() => {
-    const c = chartRef.current
-    if (!c) return
-    c.data.datasets[0].data = metricConfig[metric].data as any
-    c.update()
+    if (!chartRef.current) return
+    chartRef.current.data.datasets[0].data =
+      metricConfig[metric].data as any
+    chartRef.current.update()
   }, [metric, metricConfig])
 
-  function openPopup() {
+  const openPopup = () => {
     setPopupOpen(true)
     setIframeSrc("")
-    setTimeout(() => setIframeSrc(FORM_URL), 40)
+    setTimeout(() => setIframeSrc(FORM_URL), 50)
   }
 
-  function closePopup() {
-    setPopupOpen(false)
-  }
-
-  const alertText = metricConfig[metric].text
-  const alertCls = metricConfig[metric].cls
+  const closePopup = () => setPopupOpen(false)
 
   return (
     <>
       <style jsx global>{`
         :root {
           --blue: #1b73ff;
-          --dark: #0b1c33;
-          --muted: #6c7a92;
           --bg: #f5f7fb;
-          --card: #ffffff;
-          --ok: #2ecc71;
-          --warn: #f1c40f;
-          --risk: #e74c3c;
+          --card: #fff;
+          --text: #0b1c33;
+          --muted: #6c7a92;
         }
         * {
           box-sizing: border-box;
@@ -125,26 +105,27 @@ export default function Page() {
           margin: 0;
           font-family: Poppins, system-ui, sans-serif;
           background: var(--bg);
-          color: var(--dark);
+          color: var(--text);
         }
         .container {
-          max-width: 1200px;
+          max-width: 1280px;
           margin: auto;
-          padding: 0 20px;
+          padding: 0 24px;
         }
         header {
-          position: sticky;
-          top: 0;
-          z-index: 20;
-          background: rgba(245, 247, 251, 0.95);
+          position: fixed;
+          inset: 0 0 auto 0;
+          height: 72px;
+          background: rgba(245, 247, 251, 0.9);
           backdrop-filter: blur(10px);
+          z-index: 10;
           border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
         nav {
+          height: 72px;
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          padding: 14px 0;
+          justify-content: space-between;
         }
         .logo {
           display: flex;
@@ -152,18 +133,7 @@ export default function Page() {
           gap: 10px;
         }
         .logo img {
-          height: 48px;
-        }
-        .logo strong {
-          color: var(--blue);
-          font-size: 18px;
-        }
-        .logo span {
-          display: block;
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          color: #4a5d7a;
-          font-weight: 600;
+          height: 42px;
         }
         .btn {
           padding: 12px 22px;
@@ -175,178 +145,94 @@ export default function Page() {
         .btn-primary {
           background: linear-gradient(135deg, #1b73ff, #00c8ff);
           color: #fff;
-          box-shadow: 0 14px 30px rgba(27, 115, 255, 0.4);
+          box-shadow: 0 14px 30px rgba(27, 115, 255, 0.35);
         }
+
+        /* HERO FULL SCREEN */
         .hero {
-          padding: 56px 0 40px;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          padding-top: 72px;
         }
         .hero-grid {
           display: grid;
           grid-template-columns: 1.1fr 0.9fr;
-          gap: 36px;
+          gap: 48px;
           align-items: center;
+          width: 100%;
         }
-        .hero h1 {
-          font-size: 48px;
-          line-height: 1.08;
+        h1 {
+          font-size: 52px;
+          line-height: 1.1;
           margin: 0;
         }
-        .hero h1 span {
+        h1 span {
           color: var(--blue);
         }
-        .hero p {
-          max-width: 520px;
+        p {
           color: var(--muted);
-          font-size: 16px;
-          margin: 18px 0 26px;
+          max-width: 520px;
         }
         .dashboard {
           background: var(--card);
-          border-radius: 22px;
-          padding: 18px;
-          box-shadow: 0 20px 50px rgba(6, 19, 37, 0.12);
-        }
-        .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-        .status {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 12px;
-        }
-        .dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--ok);
-          box-shadow: 0 0 0 5px rgba(46, 204, 113, 0.2);
+          border-radius: 24px;
+          padding: 20px;
+          box-shadow: 0 30px 60px rgba(6, 19, 37, 0.12);
         }
         .dashboard-menu {
           display: flex;
           gap: 6px;
-          margin-bottom: 10px;
+          margin: 12px 0;
         }
         .dashboard-menu button {
           flex: 1;
-          border: none;
           padding: 8px;
           border-radius: 10px;
-          font-size: 12px;
+          border: none;
           background: #eef3ff;
           cursor: pointer;
         }
         .dashboard-menu button.active {
           background: var(--blue);
-          color: #fff;
+          color: white;
         }
-        .alert {
-          font-size: 12px;
-          margin: 6px 0;
+        .chart {
+          height: 180px;
         }
-        .alert.ok {
-          color: var(--ok);
-        }
-        .alert.warn {
-          color: var(--warn);
-        }
-        .alert.risk {
-          color: var(--risk);
-        }
-        .chartWrap {
-          height: 150px;
-        }
+
         section {
-          padding: 56px 0;
+          padding: 120px 0;
         }
-        .section-title {
-          font-size: 32px;
-          margin-bottom: 18px;
-          line-height: 1.15;
-        }
+
         .grid-3 {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 18px;
+          gap: 24px;
         }
         .card {
-          background: #fff;
-          border-radius: 18px;
-          padding: 20px;
-          box-shadow: 0 14px 40px rgba(6, 19, 37, 0.08);
-        }
-        .card h3 {
-          color: var(--blue);
-          margin-top: 0;
-        }
-        .popup-overlay {
-          display: none;
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.55);
-          z-index: 9999;
-          align-items: center;
-          justify-content: center;
-        }
-        .popup-overlay.active {
-          display: flex;
-        }
-        .popup {
-          background: #fff;
-          width: 720px;
-          max-width: 95%;
-          height: 82vh;
+          background: white;
+          padding: 24px;
           border-radius: 20px;
-          overflow: hidden;
-          position: relative;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
         }
-        .popup iframe {
-          width: 100%;
-          height: 100%;
-          border: none;
+
+        footer {
+          padding: 120px 0;
+          text-align: center;
+          background: linear-gradient(
+            to bottom,
+            rgba(245, 247, 251, 0),
+            rgba(245, 247, 251, 1)
+          );
         }
-        .popup-close {
-          position: absolute;
-          top: 10px;
-          right: 12px;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: none;
-          background: #fff;
-          font-size: 22px;
-          cursor: pointer;
-          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
-        }
-        @media (max-width: 768px) {
+
+        @media (max-width: 900px) {
           .hero-grid {
             grid-template-columns: 1fr;
           }
-          .hero h1 {
-            font-size: 34px;
-          }
-          .section-title {
-            font-size: 26px;
-          }
-          .grid-3 {
-            grid-template-columns: 1fr;
-          }
-          .dashboard {
-            margin-top: 10px;
-          }
-        }
-        @media (max-width: 420px) {
-          .hero h1 {
-            font-size: 30px;
-          }
-          .logo strong {
-            font-size: 17px;
-          }
-          .logo span {
-            font-size: 10px;
+          h1 {
+            font-size: 36px;
           }
         }
       `}</style>
@@ -355,11 +241,8 @@ export default function Page() {
         <div className="container">
           <nav>
             <div className="logo">
-              <img src="/assets/logo.png" alt="Enthalpy" />
-              <div>
-                <strong>Enthalpy</strong>
-                <span>COLD &amp; CRITICAL MONITORING</span>
-              </div>
+              <img src="/assets/logo.png" />
+              <strong>Enthalpy</strong>
             </div>
             <button className="btn btn-primary" onClick={openPopup}>
               Request pilot access
@@ -368,9 +251,9 @@ export default function Page() {
         </div>
       </header>
 
-      <section className="hero">
-        <div className="container">
-          <div className="hero-grid">
+      <main>
+        <section className="hero">
+          <div className="container hero-grid">
             <div>
               <h1>
                 Sensors you can trust.
@@ -378,9 +261,8 @@ export default function Page() {
                 <span>Evidence you can prove.</span>
               </h1>
               <p>
-                Enthalpy combines <strong>IoT sensors</strong> and a{" "}
-                <strong>blockchain-secured ledger</strong> to protect cold
-                chains and critical assets.
+                IoT sensors + blockchain-secured ledger for audit-ready cold
+                chain monitoring.
               </p>
               <button className="btn btn-primary" onClick={openPopup}>
                 Request pilot access
@@ -388,14 +270,7 @@ export default function Page() {
             </div>
 
             <div className="dashboard">
-              <div className="dashboard-header">
-                <strong>Live monitoring</strong>
-                <div className="status">
-                  <div className="dot" />
-                  Sensors online
-                </div>
-              </div>
-
+              <strong>Live monitoring</strong>
               <div className="dashboard-menu">
                 {(["temp", "hum", "vib", "co2"] as Metric[]).map((m) => (
                   <button
@@ -407,49 +282,57 @@ export default function Page() {
                   </button>
                 ))}
               </div>
-
-              <div className={`alert ${alertCls}`}>{alertText}</div>
-              <div className="chartWrap">
+              <div className="chart">
                 <canvas ref={canvasRef} />
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section>
-        <div className="container">
-          <h2 className="section-title">
-            Industries where a few degrees
-            <br />
-            cost millions
-          </h2>
-
-          <div className="grid-3">
-            <div className="card">
-              <h3>Pharma &amp; Biotech</h3>
-              <p>Audit-ready traceability.</p>
-            </div>
-            <div className="card">
-              <h3>Food &amp; Frozen</h3>
-              <p>Prevent cold-chain failures.</p>
-            </div>
-            <div className="card">
-              <h3>Logistics &amp; 3PL</h3>
-              <p>Proof of compliance.</p>
+        <section>
+          <div className="container">
+            <h2>Industries where a few degrees cost millions</h2>
+            <div className="grid-3">
+              <div className="card">Pharma & Biotech</div>
+              <div className="card">Food & Frozen</div>
+              <div className="card">Logistics & 3PL</div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <div className={`popup-overlay ${popupOpen ? "active" : ""}`}>
-        <div className="popup">
-          <button className="popup-close" onClick={closePopup}>
-            ×
+        <footer>
+          <h2>Turn incidents into evidence.</h2>
+          <p>Start with a pilot. Get audit-ready proof in days.</p>
+          <button className="btn btn-primary" onClick={openPopup}>
+            Request pilot access
           </button>
-          <iframe title="Early access form" src={iframeSrc} />
+        </footer>
+      </main>
+
+      {popupOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,.6)",
+            zIndex: 50,
+          }}
+          onClick={closePopup}
+        >
+          <iframe
+            src={iframeSrc}
+            style={{
+              width: "90%",
+              height: "90%",
+              borderRadius: 20,
+              border: "none",
+              margin: "5% auto",
+              display: "block",
+              background: "#fff",
+            }}
+          />
         </div>
-      </div>
+      )}
     </>
   )
 }
