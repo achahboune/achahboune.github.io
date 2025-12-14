@@ -14,10 +14,13 @@ export default function Page() {
 
   const [metric, setMetric] = useState<Metric>("temp")
   const [popupOpen, setPopupOpen] = useState(false)
-  const [iframeSrc, setIframeSrc] = useState("")
+  const [iframeSrc, setIframeSrc] = useState<string>("")
 
-  const metricConfig = useMemo(
-    () => ({
+  const metricConfig = useMemo(() => {
+    const cfg: Record<
+      Metric,
+      { label: string; data: number[]; text: string; cls: "ok" | "warn" | "risk" }
+    > = {
       temp: {
         label: "Temp",
         data: [4.2, 4.4, 5.8, 6.1, 5.2, 4.6],
@@ -42,9 +45,9 @@ export default function Page() {
         text: "Warning: CO₂ rising",
         cls: "warn",
       },
-    }),
-    []
-  )
+    }
+    return cfg
+  }, [])
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -57,7 +60,7 @@ export default function Page() {
         labels: ["00h", "04h", "08h", "12h", "16h", "20h"],
         datasets: [
           {
-            data: metricConfig.temp.data,
+            data: [4.2, 4.3, 4.5, 4.4, 4.6, 4.3],
             borderColor: "#1b73ff",
             tension: 0.4,
           },
@@ -67,172 +70,327 @@ export default function Page() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: "rgba(0,0,0,.06)" } },
+        },
       },
     })
 
-    return () => chartRef.current?.destroy()
-  }, [metricConfig])
+    return () => {
+      chartRef.current?.destroy()
+      chartRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
-    if (!chartRef.current) return
-    chartRef.current.data.datasets[0].data =
-      metricConfig[metric].data as any
-    chartRef.current.update()
+    const c = chartRef.current
+    if (!c) return
+    c.data.datasets[0].data = metricConfig[metric].data as any
+    c.update()
   }, [metric, metricConfig])
 
-  const openPopup = () => {
+  function openPopup() {
     setPopupOpen(true)
     setIframeSrc("")
-    setTimeout(() => setIframeSrc(FORM_URL), 50)
+    setTimeout(() => setIframeSrc(FORM_URL), 40)
   }
 
-  const closePopup = () => setPopupOpen(false)
+  function closePopup() {
+    setPopupOpen(false)
+  }
+
+  const alertText = metricConfig[metric].text
+  const alertCls = metricConfig[metric].cls
 
   return (
     <>
       <style jsx global>{`
         :root {
           --blue: #1b73ff;
-          --bg: #f5f7fb;
-          --card: #fff;
-          --text: #0b1c33;
+          --dark: #0b1c33;
           --muted: #6c7a92;
+          --bg: #f5f7fb;
+          --card: #ffffff;
+          --ok: #2ecc71;
+          --warn: #f1c40f;
+          --risk: #e74c3c;
         }
-        * {
-          box-sizing: border-box;
-        }
+
         body {
-          margin: 0;
-          font-family: Poppins, system-ui, sans-serif;
-          background: var(--bg);
-          color: var(--text);
+          background: radial-gradient(
+              1200px 600px at 70% 0%,
+              rgba(27, 115, 255, 0.12),
+              transparent 60%
+            ),
+            var(--bg);
+          color: var(--dark);
         }
+
         .container {
-          max-width: 1280px;
-          margin: auto;
+          width: 100%;
+          max-width: 1240px;
+          margin: 0 auto;
           padding: 0 24px;
         }
+
         header {
-          position: fixed;
-          inset: 0 0 auto 0;
-          height: 72px;
+          position: sticky;
+          top: 0;
+          z-index: 20;
           background: rgba(245, 247, 251, 0.9);
           backdrop-filter: blur(10px);
-          z-index: 10;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         }
+
         nav {
-          height: 72px;
           display: flex;
-          align-items: center;
           justify-content: space-between;
+          align-items: center;
+          padding: 14px 0;
         }
+
         .logo {
           display: flex;
           align-items: center;
           gap: 10px;
         }
+
         .logo img {
-          height: 42px;
+          height: 44px;
+          width: auto;
         }
+
+        .logo strong {
+          color: var(--blue);
+          font-size: 18px;
+          line-height: 1;
+        }
+
+        .logo span {
+          display: block;
+          margin-top: 2px;
+          font-size: 11px;
+          letter-spacing: 0.18em;
+          color: #4a5d7a;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+
         .btn {
           padding: 12px 22px;
           border-radius: 999px;
           border: none;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
+          transition: transform 0.12s ease;
         }
+        .btn:active {
+          transform: translateY(1px);
+        }
+
         .btn-primary {
           background: linear-gradient(135deg, #1b73ff, #00c8ff);
           color: #fff;
           box-shadow: 0 14px 30px rgba(27, 115, 255, 0.35);
         }
 
-        /* HERO FULL SCREEN */
+        /* IMPORTANT: hero plein écran (corrige la page “vide”) */
         .hero {
-          min-height: 100vh;
+          padding: 42px 0 24px;
+          min-height: calc(100dvh - 72px);
           display: flex;
           align-items: center;
-          padding-top: 72px;
         }
+
         .hero-grid {
           display: grid;
           grid-template-columns: 1.1fr 0.9fr;
-          gap: 48px;
+          gap: 40px;
           align-items: center;
-          width: 100%;
         }
-        h1 {
-          font-size: 52px;
-          line-height: 1.1;
+
+        .hero h1 {
+          font-size: clamp(36px, 4.2vw, 64px);
+          line-height: 1.05;
           margin: 0;
+          letter-spacing: -0.02em;
         }
-        h1 span {
+
+        .hero h1 span {
           color: var(--blue);
         }
-        p {
+
+        .hero p {
+          max-width: 560px;
           color: var(--muted);
-          max-width: 520px;
+          font-size: 16px;
+          margin: 18px 0 26px;
         }
+
         .dashboard {
           background: var(--card);
-          border-radius: 24px;
-          padding: 20px;
-          box-shadow: 0 30px 60px rgba(6, 19, 37, 0.12);
+          border-radius: 22px;
+          padding: 18px;
+          box-shadow: 0 22px 60px rgba(6, 19, 37, 0.12);
+          border: 1px solid rgba(0, 0, 0, 0.05);
         }
+
+        .dashboard-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .status {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          color: #2b3d5a;
+          font-weight: 600;
+        }
+
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--ok);
+          box-shadow: 0 0 0 5px rgba(46, 204, 113, 0.18);
+        }
+
         .dashboard-menu {
           display: flex;
           gap: 6px;
-          margin: 12px 0;
-        }
-        .dashboard-menu button {
-          flex: 1;
-          padding: 8px;
-          border-radius: 10px;
-          border: none;
-          background: #eef3ff;
-          cursor: pointer;
-        }
-        .dashboard-menu button.active {
-          background: var(--blue);
-          color: white;
-        }
-        .chart {
-          height: 180px;
+          margin-bottom: 10px;
         }
 
-        section {
-          padding: 120px 0;
+        .dashboard-menu button {
+          flex: 1;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          padding: 8px 10px;
+          border-radius: 10px;
+          font-size: 12px;
+          background: #eef3ff;
+          cursor: pointer;
+          font-weight: 700;
+        }
+
+        .dashboard-menu button.active {
+          background: var(--blue);
+          color: #fff;
+          border-color: rgba(27, 115, 255, 0.4);
+        }
+
+        .alert {
+          font-size: 12px;
+          margin: 8px 0 10px;
+          font-weight: 700;
+        }
+        .alert.ok {
+          color: var(--ok);
+        }
+        .alert.warn {
+          color: #b08900;
+        }
+        .alert.risk {
+          color: var(--risk);
+        }
+
+        .chartWrap {
+          height: 170px;
+        }
+
+        section.block {
+          padding: 56px 0 80px;
+        }
+
+        .section-title {
+          font-size: clamp(22px, 2.2vw, 34px);
+          margin: 0 0 18px;
+          line-height: 1.15;
+          letter-spacing: -0.01em;
         }
 
         .grid-3 {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-        }
-        .card {
-          background: white;
-          padding: 24px;
-          border-radius: 20px;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+          gap: 18px;
         }
 
-        footer {
-          padding: 120px 0;
-          text-align: center;
-          background: linear-gradient(
-            to bottom,
-            rgba(245, 247, 251, 0),
-            rgba(245, 247, 251, 1)
-          );
+        .card {
+          background: #fff;
+          border-radius: 18px;
+          padding: 20px;
+          box-shadow: 0 14px 40px rgba(6, 19, 37, 0.08);
+          border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card h3 {
+          color: var(--blue);
+          margin: 0 0 8px;
+        }
+
+        .card p {
+          margin: 0;
+          color: var(--muted);
+          font-weight: 600;
+        }
+
+        /* Popup */
+        .popup-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.55);
+          z-index: 9999;
+          align-items: center;
+          justify-content: center;
+          padding: 18px;
+        }
+        .popup-overlay.active {
+          display: flex;
+        }
+        .popup {
+          background: #fff;
+          width: 780px;
+          max-width: 100%;
+          height: 86vh;
+          border-radius: 20px;
+          overflow: hidden;
+          position: relative;
+        }
+        .popup iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+        }
+        .popup-close {
+          position: absolute;
+          top: 10px;
+          right: 12px;
+          width: 38px;
+          height: 38px;
+          border-radius: 999px;
+          border: none;
+          background: #fff;
+          font-size: 22px;
+          cursor: pointer;
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
         }
 
         @media (max-width: 900px) {
+          .hero {
+            min-height: auto;
+            padding: 34px 0 18px;
+          }
           .hero-grid {
             grid-template-columns: 1fr;
+            gap: 18px;
           }
-          h1 {
-            font-size: 36px;
+          .grid-3 {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
@@ -241,8 +399,11 @@ export default function Page() {
         <div className="container">
           <nav>
             <div className="logo">
-              <img src="/assets/logo.png" />
-              <strong>Enthalpy</strong>
+              <img src="/assets/logo.png" alt="Enthalpy" />
+              <div>
+                <strong>Enthalpy</strong>
+                <span>COLD &amp; CRITICAL MONITORING</span>
+              </div>
             </div>
             <button className="btn btn-primary" onClick={openPopup}>
               Request pilot access
@@ -251,9 +412,9 @@ export default function Page() {
         </div>
       </header>
 
-      <main>
-        <section className="hero">
-          <div className="container hero-grid">
+      <section className="hero">
+        <div className="container">
+          <div className="hero-grid">
             <div>
               <h1>
                 Sensors you can trust.
@@ -261,8 +422,8 @@ export default function Page() {
                 <span>Evidence you can prove.</span>
               </h1>
               <p>
-                IoT sensors + blockchain-secured ledger for audit-ready cold
-                chain monitoring.
+                Enthalpy combines <strong>IoT sensors</strong> and a{" "}
+                <strong>blockchain-secured ledger</strong> to protect cold chains and critical assets.
               </p>
               <button className="btn btn-primary" onClick={openPopup}>
                 Request pilot access
@@ -270,7 +431,14 @@ export default function Page() {
             </div>
 
             <div className="dashboard">
-              <strong>Live monitoring</strong>
+              <div className="dashboard-header">
+                <strong>Live monitoring</strong>
+                <div className="status">
+                  <div className="dot" />
+                  Sensors online
+                </div>
+              </div>
+
               <div className="dashboard-menu">
                 {(["temp", "hum", "vib", "co2"] as Metric[]).map((m) => (
                   <button
@@ -282,57 +450,50 @@ export default function Page() {
                   </button>
                 ))}
               </div>
-              <div className="chart">
+
+              <div className={`alert ${alertCls}`}>{alertText}</div>
+
+              <div className="chartWrap">
                 <canvas ref={canvasRef} />
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section>
-          <div className="container">
-            <h2>Industries where a few degrees cost millions</h2>
-            <div className="grid-3">
-              <div className="card">Pharma & Biotech</div>
-              <div className="card">Food & Frozen</div>
-              <div className="card">Logistics & 3PL</div>
+      <section className="block">
+        <div className="container">
+          <h2 className="section-title">
+            Industries where a few degrees
+            <br />
+            cost millions
+          </h2>
+
+          <div className="grid-3">
+            <div className="card">
+              <h3>Pharma &amp; Biotech</h3>
+              <p>Audit-ready traceability.</p>
+            </div>
+            <div className="card">
+              <h3>Food &amp; Frozen</h3>
+              <p>Prevent cold-chain failures.</p>
+            </div>
+            <div className="card">
+              <h3>Logistics &amp; 3PL</h3>
+              <p>Proof of compliance.</p>
             </div>
           </div>
-        </section>
-
-        <footer>
-          <h2>Turn incidents into evidence.</h2>
-          <p>Start with a pilot. Get audit-ready proof in days.</p>
-          <button className="btn btn-primary" onClick={openPopup}>
-            Request pilot access
-          </button>
-        </footer>
-      </main>
-
-      {popupOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,.6)",
-            zIndex: 50,
-          }}
-          onClick={closePopup}
-        >
-          <iframe
-            src={iframeSrc}
-            style={{
-              width: "90%",
-              height: "90%",
-              borderRadius: 20,
-              border: "none",
-              margin: "5% auto",
-              display: "block",
-              background: "#fff",
-            }}
-          />
         </div>
-      )}
+      </section>
+
+      <div className={`popup-overlay ${popupOpen ? "active" : ""}`}>
+        <div className="popup">
+          <button className="popup-close" onClick={closePopup} aria-label="Close">
+            ×
+          </button>
+          <iframe title="Early access form" src={iframeSrc} />
+        </div>
+      </div>
     </>
   )
 }
