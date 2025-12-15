@@ -169,7 +169,7 @@ export default function Page() {
           min-width: 180px;
         }
         .brand img {
-          height: 34px;
+          height: 52px;
           width: auto;
           display: block;
         }
