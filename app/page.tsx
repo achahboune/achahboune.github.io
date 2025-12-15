@@ -15,32 +15,34 @@ export default function Page() {
   const [metric, setMetric] = useState<Metric>("temp")
   const [popupOpen, setPopupOpen] = useState(false)
 
-  const metricConfig = useMemo(
-    () => ({
-      temp: {
-        label: "Temp",
-        data: [4.2, 4.4, 5.8, 6.1, 5.2, 4.6],
-        text: "Temperature excursion detected",
-      },
-      hum: {
-        label: "Humidity",
-        data: [45, 46, 44, 43, 42, 41],
-        text: "Humidity stable",
-      },
-      vib: {
-        label: "Vibration",
-        data: [1, 2, 8, 6, 2, 1],
-        text: "Shock detected",
-      },
-      co2: {
-        label: "CO₂",
-        data: [400, 420, 480, 650, 720, 680],
-        text: "CO₂ level rising",
-      },
-    }),
-    []
-  )
+  const metricConfig = useMemo(() => ({
+    temp: {
+      label: "Temp",
+      data: [4.2, 4.4, 5.8, 6.1, 5.2, 4.6],
+      event: "Temperature excursion detected",
+      level: "warn",
+    },
+    hum: {
+      label: "Humidity",
+      data: [45, 46, 44, 43, 42, 41],
+      event: "Humidity within range",
+      level: "ok",
+    },
+    vib: {
+      label: "Vibration",
+      data: [1, 2, 8, 6, 2, 1],
+      event: "Shock event detected",
+      level: "risk",
+    },
+    co2: {
+      label: "CO₂",
+      data: [400, 420, 480, 650, 720, 680],
+      event: "CO₂ threshold exceeded",
+      level: "warn",
+    },
+  }), [])
 
+  /* ================= CHART ================= */
   useEffect(() => {
     if (!canvasRef.current) return
     const ctx = canvasRef.current.getContext("2d")
@@ -55,6 +57,8 @@ export default function Page() {
             data: metricConfig.temp.data,
             borderColor: "#1b73ff",
             tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 0,
           },
         ],
       },
@@ -62,6 +66,10 @@ export default function Page() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: "rgba(0,0,0,.06)" } },
+        },
       },
     })
 
@@ -74,16 +82,16 @@ export default function Page() {
     chartRef.current.update()
   }, [metric, metricConfig])
 
+  /* ================= UI ================= */
   return (
     <>
-      {/* ================= GLOBAL STYLE ================= */}
       <style jsx global>{`
         body {
           margin: 0;
           font-family: Inter, system-ui, sans-serif;
           background: radial-gradient(
               1200px 600px at 70% 0%,
-              rgba(27, 115, 255, 0.12),
+              rgba(27,115,255,.12),
               transparent 60%
             ),
             #f5f7fb;
@@ -99,7 +107,7 @@ export default function Page() {
         header {
           position: sticky;
           top: 0;
-          background: rgba(245, 247, 251, 0.95);
+          background: rgba(245,247,251,.95);
           backdrop-filter: blur(10px);
           border-bottom: 1px solid #ddd;
           z-index: 10;
@@ -123,9 +131,10 @@ export default function Page() {
         .btn-primary {
           background: linear-gradient(135deg, #1b73ff, #00c8ff);
           color: #fff;
-          box-shadow: 0 14px 30px rgba(27, 115, 255, 0.35);
+          box-shadow: 0 14px 30px rgba(27,115,255,.35);
         }
 
+        /* HERO */
         .hero {
           min-height: calc(100vh - 70px);
           display: flex;
@@ -134,13 +143,12 @@ export default function Page() {
 
         .hero-grid {
           display: grid;
-          grid-template-columns: 1.1fr 0.9fr;
+          grid-template-columns: 1.1fr .9fr;
           gap: 40px;
-          align-items: center;
         }
 
         h1 {
-          font-size: clamp(36px, 4vw, 64px);
+          font-size: clamp(38px, 4vw, 64px);
           margin: 0;
           line-height: 1.05;
         }
@@ -150,45 +158,118 @@ export default function Page() {
         }
 
         .hero p {
-          font-size: 16px;
-          color: #4a5d7a;
           max-width: 520px;
+          color: #5f6f86;
+          font-size: 16px;
         }
 
-        section {
-          padding: 80px 0;
+        /* MONITOR CARD */
+        .monitor {
+          background: #fff;
+          border-radius: 18px;
+          padding: 16px;
+          box-shadow: 0 20px 50px rgba(0,0,0,.12);
         }
 
-        .grid-3 {
+        .monitor-header {
+          display: flex;
+          justify-content: space-between;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .online {
+          color: #2ecc71;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .online i {
+          width: 8px;
+          height: 8px;
+          background: #2ecc71;
+          border-radius: 50%;
+        }
+
+        .tabs {
+          display: flex;
+          gap: 6px;
+          margin: 12px 0;
+        }
+
+        .tabs button {
+          flex: 1;
+          font-size: 11px;
+          font-weight: 700;
+          border-radius: 8px;
+          border: none;
+          background: #eef3ff;
+          color: #1b73ff;
+          padding: 6px;
+          cursor: pointer;
+        }
+
+        .tabs button.active {
+          background: #1b73ff;
+          color: #fff;
+        }
+
+        .chart {
+          height: 160px;
+        }
+
+        /* EVENT LOG */
+        .log {
+          margin-top: 14px;
+          padding: 10px;
+          border-radius: 12px;
+          background: #f8faff;
+          font-size: 12px;
+        }
+
+        .badge {
+          display: inline-block;
+          margin-top: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #1b73ff;
+        }
+
+        /* FLOW */
+        .flow {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3,1fr);
           gap: 18px;
+          margin: 80px 0;
         }
 
         .card {
           background: #fff;
-          border-radius: 18px;
           padding: 22px;
-          box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+          border-radius: 18px;
+          box-shadow: 0 14px 40px rgba(0,0,0,.08);
+        }
+
+        footer {
+          padding: 80px 0;
+          text-align: center;
+          background: #fff;
         }
 
         /* POPUP */
         .popup-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.55);
-          display: none;
+          background: rgba(0,0,0,.55);
+          display: ${popupOpen ? "flex" : "none"};
           align-items: center;
           justify-content: center;
-          z-index: 9999;
-        }
-
-        .popup-overlay.active {
-          display: flex;
+          z-index: 999;
         }
 
         .popup {
-          width: 820px;
+          width: 800px;
           height: 85vh;
           background: #fff;
           border-radius: 20px;
@@ -202,36 +283,23 @@ export default function Page() {
           border: none;
         }
 
-        .popup-close {
+        .close {
           position: absolute;
           top: 10px;
-          right: 12px;
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          border: none;
-          background: #fff;
+          right: 14px;
           font-size: 22px;
           cursor: pointer;
-        }
-
-        footer {
-          padding: 80px 0;
-          text-align: center;
+          border: none;
           background: #fff;
         }
 
         @media (max-width: 900px) {
-          .hero-grid {
-            grid-template-columns: 1fr;
-          }
-          .grid-3 {
-            grid-template-columns: 1fr;
-          }
+          .hero-grid { grid-template-columns: 1fr; }
+          .flow { grid-template-columns: 1fr; }
         }
       `}</style>
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <header>
         <div className="container">
           <nav>
@@ -243,53 +311,64 @@ export default function Page() {
         </div>
       </header>
 
-      {/* ================= HERO ================= */}
+      {/* HERO */}
       <section className="hero">
         <div className="container hero-grid">
           <div>
             <h1>
-              Sensors you can trust.
-              <br />
+              Sensors you can trust.<br />
               <span>Evidence you can prove.</span>
             </h1>
-
             <p>
-              Transform raw IoT data into <strong>cryptographically verified proof</strong>
-              <br />
-              for compliance, insurance, and automated payments.
+              Transform raw IoT data into cryptographically verified proof for compliance,
+              insurance, and automated blockchain payments.
             </p>
-
-            <p>
-              Enthalpy seals critical events on a <strong>blockchain-secured event ledger</strong>,
-              turning real-world incidents into <strong>audit-ready evidence</strong> that can
-              automatically trigger claims, penalties, or payments.
-            </p>
-
-            <p style={{ fontWeight: 700, color: "#1b73ff" }}>
-              From sensors to proof. From proof to payment.
-            </p>
+            <p><strong>From sensors → proof → payment.</strong></p>
 
             <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
               Request pilot access
             </button>
           </div>
 
-          <div className="card">
-            <canvas ref={canvasRef} style={{ height: 220 }} />
+          <div className="monitor">
+            <div className="monitor-header">
+              <span>Live monitoring</span>
+              <span className="online"><i /> Sensors online</span>
+            </div>
+
+            <div className="tabs">
+              {(Object.keys(metricConfig) as Metric[]).map(m => (
+                <button
+                  key={m}
+                  className={metric === m ? "active" : ""}
+                  onClick={() => setMetric(m)}
+                >
+                  {metricConfig[m].label}
+                </button>
+              ))}
+            </div>
+
+            <div className="chart">
+              <canvas ref={canvasRef} />
+            </div>
+
+            <div className="log">
+              <strong>{metricConfig[metric].event}</strong><br />
+              Event sealed on blockchain ledger
+              <div className="badge">🔐 Blockchain-sealed · 💸 Payment ready</div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ================= HOW IT WORKS ================= */}
-      <section>
-        <div className="container grid-3">
-          <div className="card">Sensor captures a critical event</div>
-          <div className="card">Event sealed on blockchain ledger</div>
-          <div className="card">Proof triggers compliance or payment</div>
-        </div>
+      {/* FLOW */}
+      <section className="container flow">
+        <div className="card">📡 Sensor captures critical event</div>
+        <div className="card">🔐 Event sealed in blockchain ledger</div>
+        <div className="card">💸 Proof triggers compliance or payment</div>
       </section>
 
-      {/* ================= FOOTER ================= */}
+      {/* FOOTER */}
       <footer>
         <p>contact@enthalpy.site</p>
         <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
@@ -297,13 +376,11 @@ export default function Page() {
         </button>
       </footer>
 
-      {/* ================= POPUP ================= */}
-      <div className={`popup-overlay ${popupOpen ? "active" : ""}`}>
+      {/* POPUP */}
+      <div className="popup-overlay">
         <div className="popup">
-          <button className="popup-close" onClick={() => setPopupOpen(false)}>
-            ×
-          </button>
-          <iframe src={FORM_URL} title="Pilot access form" />
+          <button className="close" onClick={() => setPopupOpen(false)}>×</button>
+          <iframe src={FORM_URL} />
         </div>
       </div>
     </>
