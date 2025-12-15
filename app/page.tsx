@@ -20,29 +20,25 @@ export default function Page() {
       label: "Temp",
       data: [4.2, 4.4, 5.8, 6.1, 5.2, 4.6],
       event: "Temperature excursion detected",
-      level: "warn",
     },
     hum: {
       label: "Humidity",
       data: [45, 46, 44, 43, 42, 41],
-      event: "Humidity within range",
-      level: "ok",
+      event: "Humidity within safe range",
     },
     vib: {
       label: "Vibration",
       data: [1, 2, 8, 6, 2, 1],
-      event: "Shock event detected",
-      level: "risk",
+      event: "Shock / vibration event detected",
     },
     co2: {
       label: "CO₂",
       data: [400, 420, 480, 650, 720, 680],
       event: "CO₂ threshold exceeded",
-      level: "warn",
     },
   }), [])
 
-  /* ================= CHART ================= */
+  /* ===== Chart ===== */
   useEffect(() => {
     if (!canvasRef.current) return
     const ctx = canvasRef.current.getContext("2d")
@@ -82,144 +78,49 @@ export default function Page() {
     chartRef.current.update()
   }, [metric, metricConfig])
 
-  /* ================= UI ================= */
   return (
     <>
+      {/* ===== GLOBAL STYLE ===== */}
       <style jsx global>{`
         body {
           margin: 0;
           font-family: Inter, system-ui, sans-serif;
-          background: radial-gradient(
-              1200px 600px at 70% 0%,
-              rgba(27,115,255,.12),
-              transparent 60%
-            ),
-            #f5f7fb;
+          background: radial-gradient(1200px 600px at 70% 0%, rgba(27,115,255,.12), transparent 60%), #f5f7fb;
           color: #0b1c33;
         }
+        .container { max-width: 1200px; margin: auto; padding: 0 24px; }
+        header { position: sticky; top: 0; background: rgba(245,247,251,.95); backdrop-filter: blur(10px); border-bottom: 1px solid #ddd; z-index: 10; }
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; }
 
-        .container {
-          max-width: 1200px;
-          margin: auto;
-          padding: 0 24px;
-        }
+        .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+        .logo img { height: 34px; }
 
-        header {
-          position: sticky;
-          top: 0;
-          background: rgba(245,247,251,.95);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid #ddd;
-          z-index: 10;
-        }
+        .btn { padding: 12px 22px; border-radius: 999px; border: none; font-weight: 700; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, #1b73ff, #00c8ff); color: #fff; box-shadow: 0 14px 30px rgba(27,115,255,.35); }
 
-        nav {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 14px 0;
-        }
+        .hero { min-height: calc(100vh - 70px); display: flex; align-items: center; }
+        .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; }
 
-        .btn {
-          padding: 12px 22px;
-          border-radius: 999px;
-          border: none;
-          font-weight: 700;
-          cursor: pointer;
-        }
+        h1 { font-size: clamp(38px, 4vw, 64px); line-height: 1.05; margin: 0; }
+        h1 span { color: #1b73ff; }
+        .hero p { color: #5f6f86; max-width: 520px; }
 
-        .btn-primary {
-          background: linear-gradient(135deg, #1b73ff, #00c8ff);
-          color: #fff;
-          box-shadow: 0 14px 30px rgba(27,115,255,.35);
-        }
+        .monitor { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 20px 50px rgba(0,0,0,.12); }
+        .monitor-header { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; }
+        .online { color: #2ecc71; display: flex; align-items: center; gap: 6px; }
+        .online i { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; }
 
-        /* HERO */
-        .hero {
-          min-height: calc(100vh - 70px);
-          display: flex;
-          align-items: center;
-        }
-
-        .hero-grid {
-          display: grid;
-          grid-template-columns: 1.1fr .9fr;
-          gap: 40px;
-        }
-
-        h1 {
-          font-size: clamp(38px, 4vw, 64px);
-          margin: 0;
-          line-height: 1.05;
-        }
-
-        h1 span {
-          color: #1b73ff;
-        }
-
-        .hero p {
-          max-width: 520px;
-          color: #5f6f86;
-          font-size: 16px;
-        }
-
-        /* MONITOR CARD */
-        .monitor {
-          background: #fff;
-          border-radius: 18px;
-          padding: 16px;
-          box-shadow: 0 20px 50px rgba(0,0,0,.12);
-        }
-
-        .monitor-header {
-          display: flex;
-          justify-content: space-between;
-          font-size: 13px;
-          font-weight: 700;
-        }
-
-        .online {
-          color: #2ecc71;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .online i {
-          width: 8px;
-          height: 8px;
-          background: #2ecc71;
-          border-radius: 50%;
-        }
-
-        .tabs {
-          display: flex;
-          gap: 6px;
-          margin: 12px 0;
-        }
-
+        .tabs { display: flex; gap: 6px; margin: 12px 0; }
         .tabs button {
-          flex: 1;
-          font-size: 11px;
-          font-weight: 700;
-          border-radius: 8px;
-          border: none;
-          background: #eef3ff;
-          color: #1b73ff;
-          padding: 6px;
-          cursor: pointer;
+          flex: 1; font-size: 11px; font-weight: 700;
+          border-radius: 8px; border: none;
+          background: #eef3ff; color: #1b73ff;
+          padding: 6px; cursor: pointer;
         }
+        .tabs button.active { background: #1b73ff; color: #fff; }
 
-        .tabs button.active {
-          background: #1b73ff;
-          color: #fff;
-        }
+        .chart { height: 160px; }
 
-        .chart {
-          height: 160px;
-        }
-
-        /* EVENT LOG */
         .log {
           margin-top: 14px;
           padding: 10px;
@@ -228,82 +129,23 @@ export default function Page() {
           font-size: 12px;
         }
 
-        .badge {
-          display: inline-block;
-          margin-top: 6px;
-          font-size: 11px;
-          font-weight: 700;
-          color: #1b73ff;
-        }
+        .badge { font-size: 11px; font-weight: 700; color: #1b73ff; }
 
-        /* FLOW */
-        .flow {
-          display: grid;
-          grid-template-columns: repeat(3,1fr);
-          gap: 18px;
-          margin: 80px 0;
-        }
-
-        .card {
-          background: #fff;
-          padding: 22px;
-          border-radius: 18px;
-          box-shadow: 0 14px 40px rgba(0,0,0,.08);
-        }
-
-        footer {
-          padding: 80px 0;
-          text-align: center;
-          background: #fff;
-        }
-
-        /* POPUP */
-        .popup-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,.55);
-          display: ${popupOpen ? "flex" : "none"};
-          align-items: center;
-          justify-content: center;
-          z-index: 999;
-        }
-
-        .popup {
-          width: 800px;
-          height: 85vh;
-          background: #fff;
-          border-radius: 20px;
-          overflow: hidden;
-          position: relative;
-        }
-
-        .popup iframe {
-          width: 100%;
-          height: 100%;
-          border: none;
-        }
-
-        .close {
-          position: absolute;
-          top: 10px;
-          right: 14px;
-          font-size: 22px;
-          cursor: pointer;
-          border: none;
-          background: #fff;
-        }
+        footer { padding: 80px 0; text-align: center; background: #fff; }
 
         @media (max-width: 900px) {
           .hero-grid { grid-template-columns: 1fr; }
-          .flow { grid-template-columns: 1fr; }
         }
       `}</style>
 
-      {/* HEADER */}
+      {/* ===== HEADER ===== */}
       <header>
         <div className="container">
           <nav>
-            <strong>Enthalpy</strong>
+            <div className="logo">
+              <img src="/assets/logo.png" alt="Enthalpy" />
+              Enthalpy
+            </div>
             <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
               Request pilot access
             </button>
@@ -311,7 +153,7 @@ export default function Page() {
         </div>
       </header>
 
-      {/* HERO */}
+      {/* ===== HERO ===== */}
       <section className="hero">
         <div className="container hero-grid">
           <div>
@@ -354,35 +196,29 @@ export default function Page() {
 
             <div className="log">
               <strong>{metricConfig[metric].event}</strong><br />
-              Event sealed on blockchain ledger
-              <div className="badge">🔐 Blockchain-sealed · 💸 Payment ready</div>
+              Event sealed on blockchain ledger<br />
+              <span className="badge">🔐 Blockchain-sealed · 💸 Payment-ready</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FLOW */}
-      <section className="container flow">
-        <div className="card">📡 Sensor captures critical event</div>
-        <div className="card">🔐 Event sealed in blockchain ledger</div>
-        <div className="card">💸 Proof triggers compliance or payment</div>
-      </section>
-
-      {/* FOOTER */}
+      {/* ===== FOOTER ===== */}
       <footer>
-        <p>contact@enthalpy.site</p>
+        <p>contact@enthalpy.site · Tangier, Morocco</p>
         <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
           Request pilot access
         </button>
       </footer>
 
-      {/* POPUP */}
-      <div className="popup-overlay">
-        <div className="popup">
-          <button className="close" onClick={() => setPopupOpen(false)}>×</button>
-          <iframe src={FORM_URL} />
+      {/* ===== POPUP ===== */}
+      {popupOpen && (
+        <div className="popup-overlay" onClick={() => setPopupOpen(false)}>
+          <div className="popup" onClick={e => e.stopPropagation()}>
+            <iframe src={FORM_URL} />
+          </div>
         </div>
-      </div>
+      )}
     </>
   )
 }
