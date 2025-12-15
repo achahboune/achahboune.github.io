@@ -15,46 +15,56 @@ export default function Page() {
   const [metric, setMetric] = useState<Metric>("temp")
   const [popupOpen, setPopupOpen] = useState(false)
 
-  const metricConfig = useMemo(
-    () => ({
+  const metricConfig = useMemo(() => {
+    const cfg: Record<
+      Metric,
+      {
+        label: string
+        data: number[]
+        alert: string
+        tone: "ok" | "warn" | "risk"
+        colorVar: "--temp" | "--hum" | "--vib" | "--co2"
+      }
+    > = {
       temp: {
         label: "Temp",
-        color: "#f59e0b", // ORANGE
-        data: [4.2, 4.4, 5.8, 6.1, 5.2, 4.6],
-        status: "Temperature excursion detected",
-        cls: "warn",
+        data: [4.2, 4.3, 5.6, 6.1, 5.2, 4.6],
+        alert: "Temperature excursion detected",
+        tone: "warn",
+        colorVar: "--temp",
       },
       hum: {
         label: "Humidity",
-        color: "#22c55e", // GREEN
-        data: [45, 46, 44, 43, 42, 41],
-        status: "Humidity stable",
-        cls: "ok",
+        data: [45, 46, 45, 44, 43, 42],
+        alert: "Humidity stable",
+        tone: "ok",
+        colorVar: "--hum",
       },
       vib: {
         label: "Vibration",
-        color: "#ef4444", // RED
         data: [1, 2, 8, 6, 2, 1],
-        status: "Critical shock detected",
-        cls: "risk",
+        alert: "Critical shock detected",
+        tone: "risk",
+        colorVar: "--vib",
       },
       co2: {
         label: "CO₂",
-        color: "#a855f7", // PURPLE
-        data: [400, 420, 480, 650, 720, 680],
-        status: "CO₂ level rising",
-        cls: "warn",
+        data: [410, 420, 460, 620, 720, 680],
+        alert: "CO₂ level rising",
+        tone: "warn",
+        colorVar: "--co2",
       },
-    }),
-    []
-  )
+    }
+    return cfg
+  }, [])
 
-  const active = metricConfig[metric]
-
+  // Create chart once
   useEffect(() => {
     if (!canvasRef.current) return
     const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
+
+    const initial = metricConfig.temp
 
     chartRef.current = new Chart(ctx, {
       type: "line",
@@ -62,10 +72,10 @@ export default function Page() {
         labels: ["00h", "04h", "08h", "12h", "16h", "20h"],
         datasets: [
           {
-            data: metricConfig.temp.data,
-            borderColor: metricConfig.temp.color,
-            borderWidth: 2,
+            data: initial.data as any,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue("--temp").trim() || "#f59e0b",
             tension: 0.4,
+            borderWidth: 2,
             pointRadius: 0,
           },
         ],
@@ -73,72 +83,126 @@ export default function Page() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false }, tooltip: { enabled: true } },
         scales: {
-          x: { grid: { display: false } },
-          y: { grid: { color: "rgba(0,0,0,.06)" } },
+          x: { grid: { display: false }, ticks: { color: "rgba(10,20,40,.55)" } },
+          y: { grid: { color: "rgba(0,0,0,.06)" }, ticks: { color: "rgba(10,20,40,.55)" } },
         },
       },
     })
 
-    return () => chartRef.current?.destroy()
+    return () => {
+      chartRef.current?.destroy()
+      chartRef.current = null
+    }
   }, [metricConfig])
 
+  // Update chart on metric change
   useEffect(() => {
-    if (!chartRef.current) return
-    chartRef.current.data.datasets[0].data = active.data as any
-    chartRef.current.data.datasets[0].borderColor = active.color as any
-    chartRef.current.update()
-  }, [active])
+    const c = chartRef.current
+    if (!c) return
+
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue(metricConfig[metric].colorVar)
+      .trim()
+
+    c.data.datasets[0].data = metricConfig[metric].data as any
+    ;(c.data.datasets[0] as any).borderColor = color || "#1b73ff"
+    c.update()
+  }, [metric, metricConfig])
+
+  const alertTone = metricConfig[metric].tone
 
   return (
     <>
       <style jsx global>{`
+        :root {
+          --blue: #1b73ff;
+          --dark: #0b1c33;
+          --muted: #6c7a92;
+          --bg: #f5f7fb;
+          --card: #ffffff;
+
+          /* Metric colors (demandé : temp orange, vib rouge, etc.) */
+          --temp: #f59e0b; /* orange */
+          --hum: #06b6d4;  /* cyan */
+          --vib: #ef4444;  /* red */
+          --co2: #a855f7;  /* purple */
+          --ok: #22c55e;
+          --warn: #f59e0b;
+          --risk: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
         body {
           margin: 0;
-          font-family: Inter, system-ui, sans-serif;
-          background: radial-gradient(
-              1200px 600px at 70% 0%,
-              rgba(27, 115, 255, 0.12),
-              transparent 60%
-            ),
-            #f5f7fb;
-          color: #0b1c33;
+          font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+          background:
+            radial-gradient(1200px 650px at 70% 0%, rgba(27,115,255,.14), transparent 60%),
+            var(--bg);
+          color: var(--dark);
         }
-        .container {
-          max-width: 1200px;
-          margin: auto;
-          padding: 0 24px;
-        }
+
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
         header {
           position: sticky;
           top: 0;
-          background: rgba(245, 247, 251, 0.95);
+          z-index: 50;
+          background: rgba(245, 247, 251, 0.92);
           backdrop-filter: blur(10px);
-          border-bottom: 1px solid #e5e7eb;
-          z-index: 10;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         }
+
         nav {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 14px 0;
         }
+
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 180px;
+        }
+        .brand img {
+          height: 34px;
+          width: auto;
+          display: block;
+        }
+        .brand strong { font-weight: 800; letter-spacing: -0.01em; }
+        .brand small {
+          display: block;
+          font-size: 10px;
+          letter-spacing: 0.18em;
+          color: rgba(10, 25, 45, 0.55);
+          font-weight: 700;
+          margin-top: 2px;
+          white-space: nowrap;
+        }
+
         .btn {
           padding: 12px 22px;
           border-radius: 999px;
           border: none;
-          font-weight: 700;
+          font-weight: 800;
           cursor: pointer;
+          transition: transform .12s ease, box-shadow .12s ease;
+          white-space: nowrap;
         }
+        .btn:active { transform: translateY(1px); }
         .btn-primary {
           background: linear-gradient(135deg, #1b73ff, #00c8ff);
           color: #fff;
-          box-shadow: 0 14px 30px rgba(27, 115, 255, 0.35);
+          box-shadow: 0 14px 30px rgba(27,115,255,.35);
         }
 
         .hero {
-          min-height: calc(100vh - 70px);
+          padding: 34px 0 18px;
+          min-height: calc(100dvh - 70px);
           display: flex;
           align-items: center;
         }
@@ -146,204 +210,219 @@ export default function Page() {
           display: grid;
           grid-template-columns: 1.1fr 0.9fr;
           gap: 40px;
-          align-items: center;
-        }
-        h1 {
-          font-size: clamp(36px, 4vw, 64px);
-          margin: 0;
-        }
-        h1 span {
-          color: #1b73ff;
+          align-items: start;
         }
 
-        .card {
-          background: #fff;
-          border-radius: 18px;
-          padding: 18px;
-          box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+        .hero h1 {
+          font-size: clamp(40px, 4.4vw, 70px);
+          line-height: 1.03;
+          margin: 0 0 14px;
+          letter-spacing: -0.03em;
+        }
+        .hero h1 span { color: var(--blue); }
+
+        .hero p {
+          margin: 0 0 12px;
+          max-width: 620px;
+          color: rgba(10, 25, 45, 0.68);
+          font-weight: 600;
+          line-height: 1.55;
+        }
+        .hero .microline {
+          margin-top: 10px;
+          color: rgba(27, 115, 255, 0.9);
+          font-weight: 800;
+          font-size: 13px;
         }
 
-        /* ===== DASHBOARD (tabs color fix) ===== */
-        .dashTop {
+        /* Live monitoring card */
+        .monitor {
+          background: var(--card);
+          border-radius: 20px;
+          box-shadow: 0 22px 60px rgba(6,19,37,.12);
+          border: 1px solid rgba(0,0,0,.06);
+          padding: 14px 14px 12px;
+        }
+        .monitor-top {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
+          padding: 2px 2px 0;
         }
-        .dashTitle {
-          font-weight: 800;
-        }
+        .monitor-title { font-weight: 900; font-size: 13px; }
         .online {
           display: flex;
           align-items: center;
           gap: 8px;
           font-size: 12px;
-          font-weight: 700;
-          color: #2b3d5a;
+          color: rgba(10,25,45,.65);
+          font-weight: 800;
         }
-        .dotOnline {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #22c55e;
-          box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.15);
+        .dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          background: var(--ok);
+          box-shadow: 0 0 0 5px rgba(34,197,94,.18);
         }
 
         .tabs {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
           gap: 8px;
-          margin-bottom: 10px;
+          margin: 10px 0 10px;
         }
-        .tabBtn {
-          flex: 1;
-          border: none;
-          border-radius: 12px;
-          padding: 9px 10px;
-          font-weight: 800;
-          background: #eef2ff;
-          cursor: pointer;
+        .tab {
+          border: 1px solid rgba(0,0,0,.06);
+          border-radius: 999px;
+          padding: 8px 10px;
           font-size: 12px;
-          color: #0b1c33;
+          font-weight: 900;
+          background: #eef3ff;
+          cursor: pointer;
+          transition: background .12s ease, color .12s ease, border-color .12s ease;
         }
-        .chartBox {
-          height: 200px;
-          border-radius: 14px;
-          overflow: hidden;
-          background: #fff;
-        }
-        .dashStatus {
+        .tab.active { color: #fff; border-color: rgba(0,0,0,.1); }
+
+        .tab.temp.active { background: var(--temp); }
+        .tab.hum.active  { background: var(--hum); }
+        .tab.vib.active  { background: var(--blue); } /* visuel comme ta capture */
+        .tab.co2.active  { background: var(--co2); }
+
+        .chartWrap { height: 165px; }
+        .statusline {
           margin-top: 10px;
+          font-weight: 900;
           font-size: 13px;
-          font-weight: 700;
-          color: #111827;
+          color: rgba(10,25,45,.82);
         }
 
-        /* ===== From sensors to proof ===== */
-        .process {
-          padding: 70px 0 22px; /* ↓ réduit le vide en bas */
-          text-align: center;
-        }
-        .processTitle {
-          margin: 0 0 8px;
+        .pillrow {
+          margin-top: 6px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          font-size: 11px;
           font-weight: 900;
         }
-        .processSub {
-          margin: 0 auto 26px;
-          max-width: 760px;
-          color: #6b7280;
-          font-weight: 650;
+        .pill {
+          padding: 6px 10px;
+          border-radius: 999px;
+          background: rgba(27,115,255,.08);
+          border: 1px solid rgba(27,115,255,.18);
+          color: rgba(27,115,255,.95);
         }
-        .flowGrid {
+        .pill.warn { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.25); color: #b45309; }
+        .pill.risk { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); color: #b91c1c; }
+        .pill.ok   { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.22); color: #15803d; }
+
+        /* Section: From sensors to proof */
+        .section {
+          padding: 10px 0 0;
+        }
+        .centerTitle {
+          text-align: center;
+          margin: 22px 0 6px;
+          font-size: 20px;
+          font-weight: 1000;
+          letter-spacing: -0.02em;
+        }
+        .centerSub {
+          text-align: center;
+          margin: 0 auto 18px;
+          max-width: 720px;
+          color: rgba(10,25,45,.6);
+          font-weight: 700;
+          font-size: 13px;
+        }
+
+        .grid3 {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 18px;
           margin-top: 8px;
         }
-        .flowCard {
-          text-align: left;
+        .card {
           background: #fff;
           border-radius: 16px;
-          padding: 18px;
-          box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
-          border: 1px solid rgba(0, 0, 0, 0.04);
-          display: flex;
-          gap: 12px;
-          align-items: flex-start;
+          padding: 16px 16px 14px;
+          border: 1px solid rgba(0,0,0,.06);
+          box-shadow: 0 14px 40px rgba(6,19,37,.08);
+          position: relative;
         }
-        .flowBar {
+        .accent {
+          position: absolute;
+          left: 0; top: 12px; bottom: 12px;
           width: 4px;
-          border-radius: 999px;
-          flex: 0 0 4px;
-          height: 100%;
-          min-height: 54px;
-          background: #1b73ff;
+          border-radius: 99px;
         }
-        .flowBar.blue {
-          background: #1b73ff;
-        }
-        .flowBar.orange {
-          background: #f59e0b;
-        }
-        .flowBar.green {
-          background: #22c55e;
-        }
-        .flowHead {
-          font-weight: 900;
-          margin-bottom: 6px;
-        }
-        .flowText {
-          margin: 0;
-          color: #4b5563;
-          font-weight: 650;
-          line-height: 1.45;
-          font-size: 13px;
-        }
+        .accent.blue { background: var(--blue); }
+        .accent.amber { background: var(--temp); }
+        .accent.green { background: var(--ok); }
 
-        /* ===== Industries (moved up + centered title) ===== */
-        .industries {
-          padding: 10px 0 70px; /* ↑ remonte, enlève le vide */
+        .card h3 { margin: 0 0 6px; font-size: 13px; font-weight: 1000; }
+        .card p { margin: 0; color: rgba(10,25,45,.62); font-weight: 700; font-size: 12px; }
+
+        /* Industries */
+        .industriesTitle {
           text-align: center;
+          margin: 22px 0 16px;
+          font-size: 20px;
+          font-weight: 1000;
+          letter-spacing: -0.02em;
         }
-        .indTitle {
-          margin: 0 0 22px;
-          font-weight: 900;
-        }
-        .grid-3 {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 18px;
-          text-align: left;
-        }
+        .industry h4 { margin: 0 0 6px; color: var(--blue); font-weight: 1000; }
+        .industry p { margin: 0; color: rgba(10,25,45,.62); font-weight: 700; font-size: 12px; }
 
-        /* ===== POPUP ===== */
+        /* Footer */
+        footer {
+          padding: 26px 0 34px;
+          text-align: center;
+          color: rgba(10,25,45,.65);
+          font-weight: 800;
+        }
+        footer .email { color: rgba(10,25,45,.85); }
+        footer .loc { margin-top: 6px; font-size: 12px; }
+
+        /* Popup */
         .popup-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.55);
+          background: rgba(0,0,0,.55);
           display: none;
           align-items: center;
           justify-content: center;
           z-index: 9999;
           padding: 18px;
         }
-        .popup-overlay.active {
-          display: flex;
-        }
+        .popup-overlay.active { display: flex; }
         .popup {
-          width: 820px;
+          width: 860px;
           max-width: 100%;
           height: 86vh;
           background: #fff;
           border-radius: 20px;
           overflow: hidden;
           position: relative;
-          box-shadow: 0 30px 90px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 30px 90px rgba(0,0,0,.35);
         }
-        .popup iframe {
-          width: 100%;
-          height: 100%;
-          border: none;
-        }
+        .popup iframe { width: 100%; height: 100%; border: none; }
         .popup-close {
           position: absolute;
-          top: 10px;
-          right: 12px;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
+          top: 10px; right: 12px;
+          width: 40px; height: 40px;
+          border-radius: 999px;
           border: none;
           background: #fff;
           font-size: 22px;
           cursor: pointer;
-          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 10px 24px rgba(0,0,0,.2);
         }
 
-        @media (max-width: 900px) {
-          .hero-grid,
-          .flowGrid,
-          .grid-3 {
-            grid-template-columns: 1fr;
-          }
+        @media (max-width: 980px) {
+          .hero { min-height: auto; }
+          .hero-grid { grid-template-columns: 1fr; }
+          .grid3 { grid-template-columns: 1fr; }
+          nav { gap: 12px; }
         }
       `}</style>
 
@@ -351,7 +430,14 @@ export default function Page() {
       <header>
         <div className="container">
           <nav>
-            <div style={{ fontWeight: 900 }}>Enthalpy</div>
+            <div className="brand">
+              <img src="/assets/logo.png" alt="Enthalpy logo" />
+              <div>
+                <strong>Enthalpy</strong>
+                <small>COLD &amp; CRITICAL MONITORING</small>
+              </div>
+            </div>
+
             <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
               Request pilot access
             </button>
@@ -361,134 +447,151 @@ export default function Page() {
 
       {/* HERO */}
       <section className="hero">
-        <div className="container hero-grid">
-          <div>
-            <h1>
-              Sensors you can trust.
-              <br />
-              <span>Evidence you can prove.</span>
-            </h1>
-            <p style={{ color: "#6b7280", fontWeight: 650, maxWidth: 620, lineHeight: 1.55 }}>
-              Transform raw IoT data into cryptographically verified proof for compliance, insurance,
-              and automated blockchain payments.
-            </p>
-            <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
-              Request pilot access
-            </button>
-          </div>
+        <div className="container">
+          <div className="hero-grid">
+            <div>
+              <h1>
+                Sensors you can trust.
+                <br />
+                <span>Evidence you can prove.</span>
+              </h1>
 
-          {/* DASHBOARD */}
-          <div className="card">
-            <div className="dashTop">
-              <div className="dashTitle">Live monitoring</div>
-              <div className="online">
-                <span className="dotOnline" />
-                Sensors online
+              {/* PROBLEME -> SOLUTION (clair + net dès l’ouverture) */}
+              <p>
+                Capture, trace and alert on <strong>temperature</strong>, <strong>humidity</strong>, <strong>vibration</strong> and <strong>CO₂</strong> in real time.
+                <br />
+                Seal incidents into <strong>audit-ready proof</strong> on a blockchain-secured event ledger.
+                <br />
+                Use that proof to support compliance, insurance claims — and <strong>blockchain-triggered payments</strong>.
+              </p>
+
+              <div className="microline">From sensors → proof → payment.</div>
+
+              <div style={{ marginTop: 14 }}>
+                <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
+                  Request pilot access
+                </button>
               </div>
             </div>
 
-            <div className="tabs">
-              {(["temp", "hum", "vib", "co2"] as Metric[]).map((m) => {
-                const isActive = metric === m
-                return (
-                  <button
-                    key={m}
-                    className="tabBtn"
-                    onClick={() => setMetric(m)}
-                    style={
-                      isActive
-                        ? {
-                            background: metricConfig[m].color, // ✅ couleur paramètre
-                            color: "#fff",
-                          }
-                        : undefined
-                    }
-                  >
-                    {metricConfig[m].label}
-                  </button>
-                )
-              })}
-            </div>
+            <div className="monitor">
+              <div className="monitor-top">
+                <div className="monitor-title">Live monitoring</div>
+                <div className="online">
+                  <span className="dot" />
+                  Sensors online
+                </div>
+              </div>
 
-            <div className="chartBox">
-              <div style={{ height: 200, padding: 10 }}>
+              <div className="tabs">
+                <button
+                  className={`tab temp ${metric === "temp" ? "active" : ""}`}
+                  onClick={() => setMetric("temp")}
+                >
+                  Temp
+                </button>
+                <button
+                  className={`tab hum ${metric === "hum" ? "active" : ""}`}
+                  onClick={() => setMetric("hum")}
+                >
+                  Humidity
+                </button>
+                <button
+                  className={`tab vib ${metric === "vib" ? "active" : ""}`}
+                  onClick={() => setMetric("vib")}
+                >
+                  Vibration
+                </button>
+                <button
+                  className={`tab co2 ${metric === "co2" ? "active" : ""}`}
+                  onClick={() => setMetric("co2")}
+                >
+                  CO₂
+                </button>
+              </div>
+
+              <div className="chartWrap">
                 <canvas ref={canvasRef} />
               </div>
-            </div>
 
-            <div className="dashStatus">{active.status}</div>
-          </div>
-        </div>
-      </section>
+              <div className="statusline">{metricConfig[metric].alert}</div>
 
-      {/* FROM SENSORS TO PROOF */}
-      <section className="process">
-        <div className="container">
-          <h2 className="processTitle">From sensors to proof</h2>
-          <div className="processSub">
-            Enthalpy turns real-world incidents into trusted digital evidence that can trigger compliance
-            actions or payments.
-          </div>
-
-          <div className="flowGrid">
-            <div className="flowCard">
-              <div className="flowBar blue" />
-              <div>
-                <div className="flowHead">🔔 Sensor event</div>
-                <p className="flowText">Temperature, vibration or CO₂ threshold exceeded.</p>
-              </div>
-            </div>
-
-            <div className="flowCard">
-              <div className="flowBar orange" />
-              <div>
-                <div className="flowHead">🔒 Blockchain proof</div>
-                <p className="flowText">Event is hashed, timestamped and sealed on-chain.</p>
-              </div>
-            </div>
-
-            <div className="flowCard">
-              <div className="flowBar green" />
-              <div>
-                <div className="flowHead">✅ Compliance / Payment</div>
-                <p className="flowText">Audit, penalty or automated payout is triggered.</p>
+              {/* Badges (preuve + paiement) */}
+              <div className="pillrow">
+                <span className={`pill ${alertTone}`}>● Incident captured</span>
+                <span className="pill warn">🔒 Blockchain-sealed</span>
+                <span className="pill ok">💸 Payment ready</span>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* INDUSTRIES (moved up + centered title) */}
-      <section className="industries">
-        <div className="container">
-          <h2 className="indTitle">Industries where a few degrees cost millions</h2>
+          {/* FROM SENSORS TO PROOF */}
+          <div className="section">
+            <div className="centerTitle">From sensors to proof</div>
+            <div className="centerSub">
+              Enthalpy turns real-world incidents into trusted digital evidence that can trigger compliance actions or payments.
+            </div>
 
-          <div className="grid-3">
-            <div className="card">
-              <h3 style={{ margin: "0 0 8px", color: "#1b73ff" }}>Pharma &amp; Biotech</h3>
-              <p style={{ margin: 0, color: "#6b7280", fontWeight: 650 }}>
-                Audit-ready traceability.
-              </p>
+            <div className="grid3">
+              <div className="card">
+                <span className="accent blue" />
+                <h3>🔔 Sensor event</h3>
+                <p>Temperature, vibration or CO₂ threshold exceeded.</p>
+              </div>
+
+              <div className="card">
+                <span className="accent amber" />
+                <h3>🔒 Blockchain proof</h3>
+                <p>Event is hashed, timestamped and sealed on-chain.</p>
+              </div>
+
+              <div className="card">
+                <span className="accent green" />
+                <h3>✅ Compliance / Payment</h3>
+                <p>Audit, penalty or automated payout is triggered.</p>
+              </div>
             </div>
-            <div className="card">
-              <h3 style={{ margin: "0 0 8px", color: "#1b73ff" }}>Food &amp; Frozen</h3>
-              <p style={{ margin: 0, color: "#6b7280", fontWeight: 650 }}>
-                Prevent cold-chain failures.
-              </p>
+
+            {/* INDUSTRIES (remonté, centré, sans vide) */}
+            <div className="industriesTitle">Industries where a few degrees cost millions</div>
+
+            <div className="grid3">
+              <div className="card industry">
+                <h4>Pharma &amp; Biotech</h4>
+                <p>Audit-ready traceability.</p>
+              </div>
+              <div className="card industry">
+                <h4>Food &amp; Frozen</h4>
+                <p>Prevent cold-chain failures.</p>
+              </div>
+              <div className="card industry">
+                <h4>Logistics &amp; 3PL</h4>
+                <p>Proof of compliance.</p>
+              </div>
             </div>
-            <div className="card">
-              <h3 style={{ margin: "0 0 8px", color: "#1b73ff" }}>Logistics &amp; 3PL</h3>
-              <p style={{ margin: 0, color: "#6b7280", fontWeight: 650 }}>
-                Proof of compliance.
-              </p>
-            </div>
+
+            {/* FOOTER (email + Tangier, Morocco) */}
+            <footer>
+              <div className="email">contact@enthalpy.site</div>
+              <div className="loc">Tangier, Morocco</div>
+              <div style={{ marginTop: 14 }}>
+                <button className="btn btn-primary" onClick={() => setPopupOpen(true)}>
+                  Request pilot access
+                </button>
+              </div>
+            </footer>
           </div>
         </div>
       </section>
 
       {/* POPUP */}
-      <div className={`popup-overlay ${popupOpen ? "active" : ""}`}>
-        <div className="popup">
+      <div
+        className={`popup-overlay ${popupOpen ? "active" : ""}`}
+        onClick={() => setPopupOpen(false)}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="popup" onClick={(e) => e.stopPropagation()}>
           <button className="popup-close" onClick={() => setPopupOpen(false)} aria-label="Close">
             ×
           </button>
