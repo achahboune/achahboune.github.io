@@ -97,12 +97,14 @@ export default function Page() {
 
     if (!form.company.trim()) return setErrorMsg("Company name is required.")
     if (!form.email.trim()) return setErrorMsg("Work email is required.")
-    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return setErrorMsg("Please enter a valid email.")
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim()))
+      return setErrorMsg("Please enter a valid email.")
     if (!form.message.trim()) return setErrorMsg("Message is required.")
 
     setSubmitting(true)
     try {
-      const res = await fetch("/api/pilot-access", {
+      // ⚠️ si ton next.config a trailingSlash=true, garde le "/" à la fin
+      const res = await fetch("/api/pilot-access/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -205,7 +207,7 @@ export default function Page() {
         body {
           margin: 0;
           font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-          font-weight: 400; /* ✅ plus fin global */
+          font-weight: 360; /* ✅ plus fin */
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           background: radial-gradient(
@@ -219,7 +221,7 @@ export default function Page() {
 
         strong,
         b {
-          font-weight: 500; /* ✅ au lieu de gras lourd */
+          font-weight: 430; /* ✅ très léger */
         }
 
         .container {
@@ -260,7 +262,7 @@ export default function Page() {
           color: var(--dark);
           font-size: 18px;
           line-height: 1;
-          font-weight: 550; /* ✅ plus fin */
+          font-weight: 500; /* ✅ plus fin */
         }
 
         .logo span {
@@ -269,7 +271,7 @@ export default function Page() {
           font-size: 11px;
           letter-spacing: 0.18em;
           color: #4a5d7a;
-          font-weight: 500; /* ✅ */
+          font-weight: 420; /* ✅ */
           white-space: nowrap;
         }
 
@@ -277,7 +279,7 @@ export default function Page() {
           padding: 12px 22px;
           border-radius: 999px;
           border: none;
-          font-weight: 520; /* ✅ */
+          font-weight: 460; /* ✅ */
           cursor: pointer;
         }
 
@@ -309,7 +311,7 @@ export default function Page() {
           margin: 0;
           letter-spacing: -0.02em;
           line-height: 1.02;
-          font-weight: 600; /* ✅ plus fin que 800 */
+          font-weight: 520; /* ✅ beaucoup plus fin */
         }
 
         h1 span {
@@ -319,16 +321,16 @@ export default function Page() {
         .hero-copy {
           margin-top: 14px;
           color: #2b3d5a;
-          font-weight: 400; /* ✅ */
+          font-weight: 360; /* ✅ */
           max-width: 560px;
-          line-height: 1.55;
+          line-height: 1.6;
           font-size: 14px;
         }
 
         .hero-tagline {
           margin-top: 12px;
           color: var(--blue);
-          font-weight: 520; /* ✅ */
+          font-weight: 440; /* ✅ */
           font-size: 13px;
         }
 
@@ -348,7 +350,7 @@ export default function Page() {
         }
 
         .dashboard-header strong {
-          font-weight: 550; /* ✅ */
+          font-weight: 480; /* ✅ */
         }
 
         .status {
@@ -357,7 +359,7 @@ export default function Page() {
           gap: 8px;
           font-size: 12px;
           color: #2b3d5a;
-          font-weight: 450; /* ✅ */
+          font-weight: 380; /* ✅ */
         }
 
         .dot {
@@ -382,7 +384,7 @@ export default function Page() {
           font-size: 12px;
           background: #eef3ff;
           cursor: pointer;
-          font-weight: 520; /* ✅ */
+          font-weight: 440; /* ✅ */
           display: flex;
           align-items: center;
           justify-content: center;
@@ -399,7 +401,7 @@ export default function Page() {
 
         .alertline {
           margin-top: 10px;
-          font-weight: 450; /* ✅ */
+          font-weight: 420; /* ✅ */
           font-size: 12px;
         }
 
@@ -427,7 +429,7 @@ export default function Page() {
           border-radius: 999px;
           padding: 6px 10px;
           font-size: 11px;
-          font-weight: 450; /* ✅ */
+          font-weight: 380; /* ✅ */
           background: rgba(0, 0, 0, 0.04);
           border: 1px solid rgba(0, 0, 0, 0.06);
           color: #0b1c33;
@@ -441,7 +443,7 @@ export default function Page() {
 
         .centerTitle {
           text-align: center;
-          font-weight: 520; /* ✅ */
+          font-weight: 480; /* ✅ */
           font-size: 18px;
           margin: 24px 0 6px;
           letter-spacing: -0.01em;
@@ -452,7 +454,7 @@ export default function Page() {
           margin: 0 auto 22px;
           max-width: 720px;
           color: var(--muted);
-          font-weight: 400; /* ✅ */
+          font-weight: 360; /* ✅ */
           font-size: 13px;
         }
 
@@ -482,7 +484,7 @@ export default function Page() {
         }
 
         .stepTitle {
-          font-weight: 520; /* ✅ */
+          font-weight: 460; /* ✅ */
           margin: 0 0 4px;
           font-size: 13px;
         }
@@ -490,14 +492,14 @@ export default function Page() {
         .stepText {
           margin: 0;
           color: #2b3d5a;
-          font-weight: 400; /* ✅ */
+          font-weight: 360; /* ✅ */
           font-size: 12px;
-          line-height: 1.4;
+          line-height: 1.45;
         }
 
         .industryTitle {
           text-align: center;
-          font-weight: 520; /* ✅ */
+          font-weight: 480; /* ✅ */
           font-size: 20px;
           margin: 26px 0 14px;
           letter-spacing: -0.01em;
@@ -514,14 +516,14 @@ export default function Page() {
         .industryCard h3 {
           margin: 0 0 6px;
           color: var(--blue);
-          font-weight: 520; /* ✅ */
+          font-weight: 460; /* ✅ */
           font-size: 14px;
         }
 
         .industryCard p {
           margin: 0;
           color: #2b3d5a;
-          font-weight: 400; /* ✅ */
+          font-weight: 360; /* ✅ */
           font-size: 12px;
         }
 
@@ -529,12 +531,12 @@ export default function Page() {
           text-align: center;
           padding: 26px 0 34px;
           color: #2b3d5a;
-          font-weight: 400; /* ✅ */
+          font-weight: 360; /* ✅ */
           font-size: 12px;
         }
 
         .footer .email {
-          font-weight: 520; /* ✅ */
+          font-weight: 460; /* ✅ */
           color: #0b1c33;
           font-size: 13px;
         }
@@ -542,7 +544,7 @@ export default function Page() {
         .footer .loc {
           margin-top: 6px;
           color: #6c7a92;
-          font-weight: 450; /* ✅ */
+          font-weight: 380; /* ✅ */
         }
 
         /* POPUP */
@@ -584,7 +586,7 @@ export default function Page() {
 
         .popupTitle {
           margin: 0;
-          font-weight: 520; /* ✅ */
+          font-weight: 480; /* ✅ */
           letter-spacing: -0.02em;
           font-size: 18px;
         }
@@ -592,9 +594,9 @@ export default function Page() {
         .popupSub {
           margin: 6px 0 0;
           color: #2b3d5a;
-          font-weight: 400; /* ✅ */
+          font-weight: 360; /* ✅ */
           font-size: 12px;
-          line-height: 1.4;
+          line-height: 1.45;
         }
 
         .popupBody {
@@ -607,10 +609,11 @@ export default function Page() {
           gap: 12px;
         }
 
+        /* ✅ labels froids + fins */
         label {
           display: block;
           font-size: 12px;
-          font-weight: 450; /* ✅ */
+          font-weight: 420;
           color: var(--label);
           margin: 0 0 6px;
         }
@@ -622,7 +625,7 @@ export default function Page() {
           border: 1px solid rgba(0, 0, 0, 0.12);
           padding: 12px 12px;
           font-size: 13px;
-          font-weight: 400; /* ✅ */
+          font-weight: 360; /* ✅ */
           outline: none;
           background: #fff;
           color: #0b1c33;
@@ -649,7 +652,7 @@ export default function Page() {
         .err {
           margin-top: 10px;
           color: #b91c1c;
-          font-weight: 450; /* ✅ */
+          font-weight: 420;
           font-size: 12px;
         }
 
@@ -659,9 +662,9 @@ export default function Page() {
           background: rgba(34, 197, 94, 0.1);
           border: 1px solid rgba(34, 197, 94, 0.2);
           color: #0b1c33;
-          font-weight: 400; /* ✅ */
+          font-weight: 360;
           font-size: 13px;
-          line-height: 1.4;
+          line-height: 1.45;
         }
 
         .popup-close {
@@ -739,7 +742,7 @@ export default function Page() {
                 <strong>blockchain-secured event ledger</strong>.
                 <br />
                 Use that proof to support compliance, insurance claims — and{" "}
-                <strong> blockchain-triggered payments</strong>.
+                <strong>blockchain-triggered payments</strong>.
               </div>
 
               <div className="hero-tagline">From sensors → proof → payment.</div>
