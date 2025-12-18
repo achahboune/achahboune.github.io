@@ -2,27 +2,36 @@ import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({} as any))
-    const name = (body?.name ?? "").toString().trim()
-    const company = (body?.company ?? "").toString().trim()
-    const email = (body?.email ?? "").toString().trim()
-    const message = (body?.message ?? "").toString().trim()
+    const body = await req.json().catch(() => ({}))
 
-    if (!company || !email || !message) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+    // Honeypot anti-bot
+    if (body?.website && String(body.website).trim().length > 0) {
+      return NextResponse.json({ ok: true })
     }
+
+    const name = String(body?.name || "").trim()
+    const company = String(body?.company || "").trim()
+    const email = String(body?.email || "").trim()
+    const message = String(body?.message || "").trim()
+
+    if (!company) return NextResponse.json({ error: "Company is required" }, { status: 400 })
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      return NextResponse.json({ error: "Valid email is required" }, { status: 400 })
+    }
+    if (!message) return NextResponse.json({ error: "Message is required" }, { status: 400 })
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY
-    const TO = process.env.PILOT_TO_EMAIL || "contact@enthalpy.site"
-    const FROM = process.env.PILOT_FROM_EMAIL || "onboarding@resend.dev"
+    const PILOT_TO_EMAIL = process.env.PILOT_TO_EMAIL || "contact@enthalpy.site"
+    const PILOT_FROM_EMAIL = process.env.PILOT_FROM_EMAIL || "Enthalpy <onboarding@resend.dev>"
 
     if (!RESEND_API_KEY) {
-      return NextResponse.json({ error: "RESEND_API_KEY missing" }, { status: 500 })
+      return NextResponse.json({ error: "Missing RESEND_API_KEY" }, { status: 500 })
     }
 
+    const subject = `Pilot access request — ${company}`
     const html = `
-      <div style="font-family:Inter,Arial,sans-serif;line-height:1.5">
-        <h2>New pilot access request</h2>
+      <div style="font-family: Inter, system-ui, Arial; line-height:1.5">
+        <h2 style="margin:0 0 10px 0;">New pilot request</h2>
         <p><b>Name:</b> ${escapeHtml(name || "-")}</p>
         <p><b>Company:</b> ${escapeHtml(company)}</p>
         <p><b>Email:</b> ${escapeHtml(email)}</p>
@@ -30,34 +39,33 @@ export async function POST(req: Request) {
       </div>
     `
 
-    const send = await fetch("https://api.resend.com/emails", {
+    const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: FROM,
-        to: [TO],
-        subject: `Pilot access request — ${company}`,
-        reply_to: email,
+        from: PILOT_FROM_EMAIL,
+        to: [PILOT_TO_EMAIL],
+        reply_to: email, // utile même si from = resend.dev
+        subject,
         html,
       }),
     })
 
-    if (!send.ok) {
-      const errText = await send.text().catch(() => "")
-      console.log("RESEND_ERROR_STATUS:", send.status)
-      console.log("RESEND_ERROR_BODY:", errText)
+    const data = await r.json().catch(() => ({}))
+
+    if (!r.ok) {
+      // Renvoie l’erreur exacte à ton UI (tu la verras)
       return NextResponse.json(
-        { error: "Email sending failed", details: errText },
+        { error: data?.message || "Email sending failed", resend: data },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 })
+    return NextResponse.json({ ok: true })
   } catch (e: any) {
-    console.log("API_ERROR:", e?.message || e)
     return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
