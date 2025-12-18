@@ -1,56 +1,34 @@
 import { NextResponse } from "next/server"
 
-export const runtime = "nodejs"
-
-type Body = {
-  name?: string
-  company?: string
-  email?: string
-  message?: string
-  website?: string // honeypot
-}
-
-function isEmail(v: string) {
-  return /^\S+@\S+\.\S+$/.test(v)
-}
-
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as Body
+    const body = await req.json().catch(() => ({} as any))
+    const name = (body?.name ?? "").toString().trim()
+    const company = (body?.company ?? "").toString().trim()
+    const email = (body?.email ?? "").toString().trim()
+    const message = (body?.message ?? "").toString().trim()
 
-    // honeypot
-    if ((body.website || "").trim().length > 0) {
-      return NextResponse.json({ ok: true })
+    if (!company || !email || !message) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 })
     }
-
-    const name = (body.name || "").trim()
-    const company = (body.company || "").trim()
-    const email = (body.email || "").trim()
-    const message = (body.message || "").trim()
-
-    if (!company) return NextResponse.json({ error: "Company is required" }, { status: 400 })
-    if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 })
-    if (!isEmail(email)) return NextResponse.json({ error: "Invalid email" }, { status: 400 })
-    if (!message) return NextResponse.json({ error: "Message is required" }, { status: 400 })
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY
-    const PILOT_TO_EMAIL = process.env.PILOT_TO_EMAIL
-    const PILOT_FROM_EMAIL = process.env.PILOT_FROM_EMAIL
+    const TO = process.env.PILOT_TO_EMAIL || "contact@enthalpy.site"
+    const FROM = process.env.PILOT_FROM_EMAIL || "onboarding@resend.dev"
 
-    if (!RESEND_API_KEY || !PILOT_TO_EMAIL || !PILOT_FROM_EMAIL) {
-      return NextResponse.json(
-        { error: "Server not configured (missing env vars)" },
-        { status: 500 }
-      )
+    if (!RESEND_API_KEY) {
+      return NextResponse.json({ error: "RESEND_API_KEY missing" }, { status: 500 })
     }
 
-    const subject = `Pilot access — ${company}`
-    const text =
-      `New pilot access request\n\n` +
-      `Name: ${name || "(not provided)"}\n` +
-      `Company: ${company}\n` +
-      `Email: ${email}\n\n` +
-      `Message:\n${message}\n`
+    const html = `
+      <div style="font-family:Inter,Arial,sans-serif;line-height:1.5">
+        <h2>New pilot access request</h2>
+        <p><b>Name:</b> ${escapeHtml(name || "-")}</p>
+        <p><b>Company:</b> ${escapeHtml(company)}</p>
+        <p><b>Email:</b> ${escapeHtml(email)}</p>
+        <p><b>Message:</b><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>
+      </div>
+    `
 
     const send = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -59,24 +37,36 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: PILOT_FROM_EMAIL,
-        to: [PILOT_TO_EMAIL],
+        from: FROM,
+        to: [TO],
+        subject: `Pilot access request — ${company}`,
         reply_to: email,
-        subject,
-        text,
+        html,
       }),
     })
 
     if (!send.ok) {
       const errText = await send.text().catch(() => "")
+      console.log("RESEND_ERROR_STATUS:", send.status)
+      console.log("RESEND_ERROR_BODY:", errText)
       return NextResponse.json(
-        { error: "Email sending failed", details: errText.slice(0, 500) },
+        { error: "Email sending failed", details: errText },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ ok: true })
-  } catch {
-    return NextResponse.json({ error: "Unexpected server error" }, { status: 500 })
+    return NextResponse.json({ ok: true }, { status: 200 })
+  } catch (e: any) {
+    console.log("API_ERROR:", e?.message || e)
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
+}
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
 }
