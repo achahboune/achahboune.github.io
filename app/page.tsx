@@ -1,6 +1,51 @@
+/* app/page.tsx */
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
+
+type Metric = "temp" | "humidity" | "vibration" | "co2"
+
+const SERIES: Record<
+  Metric,
+  { label: string; unit: string; data: number[]; alert: string; yMin?: number; yMax?: number }
+> = {
+  temp: {
+    label: "Temp",
+    unit: "°C",
+    data: [4.2, 4.1, 4.3, 4.8, 5.4, 5.9, 6.1, 6.0, 5.7, 5.4, 5.2],
+    alert: "Temperature excursion detected",
+    yMin: 4,
+    yMax: 6.5,
+  },
+  humidity: {
+    label: "Humidity",
+    unit: "%",
+    data: [58, 57, 58, 60, 62, 66, 68, 67, 65, 63, 62],
+    alert: "Humidity drift detected",
+    yMin: 50,
+    yMax: 75,
+  },
+  vibration: {
+    label: "Vibration",
+    unit: "g",
+    data: [0.12, 0.11, 0.13, 0.18, 0.22, 0.31, 0.28, 0.24, 0.21, 0.19, 0.17],
+    alert: "Abnormal vibration detected",
+    yMin: 0.05,
+    yMax: 0.35,
+  },
+  co2: {
+    label: "CO₂",
+    unit: "ppm",
+    data: [410, 415, 420, 435, 460, 520, 610, 690, 720, 710, 680],
+    alert: "CO₂ level rising",
+    yMin: 380,
+    yMax: 760,
+  },
+}
+
+function clamp(n: number, a: number, b: number) {
+  return Math.max(a, Math.min(b, n))
+}
 
 export default function Page() {
   // POPUP + FORM
@@ -15,6 +60,9 @@ export default function Page() {
     message: "",
     website: "", // honeypot
   })
+
+  // DASHBOARD
+  const [metric, setMetric] = useState<Metric>("temp")
 
   function openPopup() {
     setPopupOpen(true)
@@ -87,6 +135,30 @@ export default function Page() {
     return () => window.removeEventListener("keydown", onKey)
   }, [popupOpen])
 
+  const chart = useMemo(() => {
+    const s = SERIES[metric]
+    const W = 560
+    const H = 230
+    const padX = 18
+    const padY = 16
+
+    const min =
+      typeof s.yMin === "number" ? s.yMin : Math.min(...s.data) - (Math.max(...s.data) - Math.min(...s.data)) * 0.08
+    const max =
+      typeof s.yMax === "number" ? s.yMax : Math.max(...s.data) + (Math.max(...s.data) - Math.min(...s.data)) * 0.08
+
+    const points = s.data
+      .map((v, i) => {
+        const x = padX + (i / (s.data.length - 1)) * (W - padX * 2)
+        const t = (v - min) / (max - min || 1)
+        const y = padY + (1 - clamp(t, 0, 1)) * (H - padY * 2)
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+      })
+      .join(" ")
+
+    return { W, H, padX, padY, min, max, points, s }
+  }, [metric])
+
   return (
     <>
       <style jsx global>{`
@@ -97,6 +169,8 @@ export default function Page() {
           --bg: #f5f7fb;
           --card: #ffffff;
           --ok: #22c55e;
+          --warn: #f59e0b;
+          --risk: #ef4444;
           --label: #51627f;
         }
 
@@ -206,6 +280,44 @@ export default function Page() {
           align-items: start;
         }
 
+        .heroLeft {
+          position: relative;
+          padding: 6px 0;
+        }
+
+        /* 👇 Filigrane (côté gauche) */
+        .heroLeft::before {
+          content: "";
+          position: absolute;
+          inset: -80px -40px -80px -120px;
+          background: url("/assets/hero-connectivity-bg.png") left center / cover no-repeat;
+          opacity: 0.24;
+          filter: saturate(1.05) contrast(1.05);
+          pointer-events: none;
+          z-index: 0;
+          mask-image: linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.95) 45%,
+            rgba(0, 0, 0, 0) 78%
+          );
+        }
+
+        /* 👇 voile pour garder la lisibilité du texte */
+        .heroLeft::after {
+          content: "";
+          position: absolute;
+          inset: -80px -40px -80px -120px;
+          background: linear-gradient(90deg, rgba(245, 247, 251, 0.94), rgba(245, 247, 251, 0.78), rgba(245, 247, 251, 0));
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .heroLeft > * {
+          position: relative;
+          z-index: 1;
+        }
+
         h1 {
           font-size: clamp(36px, 4.3vw, 64px);
           margin: 0;
@@ -221,6 +333,7 @@ export default function Page() {
         .hero-copy {
           margin-top: 14px;
           color: #2b3d5a;
+          font-weight: 400;
           max-width: 620px;
           line-height: 1.6;
           font-size: 14px;
@@ -233,23 +346,96 @@ export default function Page() {
           font-size: 13px;
         }
 
-        .visualCard {
+        /* DASHBOARD CARD */
+        .dashCard {
           background: var(--card);
           border-radius: 18px;
-          padding: 14px;
+          padding: 14px 14px 12px;
           box-shadow: 0 22px 60px rgba(6, 19, 37, 0.12);
           border: 1px solid rgba(0, 0, 0, 0.05);
           overflow: hidden;
         }
 
-        .visualImg {
-          width: 100%;
-          height: auto;
-          display: block;
-          border-radius: 14px;
+        .dashTop {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 2px 4px 10px;
         }
 
-        .visualCaption {
+        .dashTitle {
+          font-weight: 560;
+          font-size: 13px;
+          color: #0b1c33;
+          letter-spacing: -0.01em;
+        }
+
+        .online {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          color: #2b3d5a;
+          font-weight: 450;
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.18);
+          padding: 6px 10px;
+          border-radius: 999px;
+        }
+
+        .onlineDot {
+          width: 8px;
+          height: 8px;
+          border-radius: 99px;
+          background: var(--ok);
+          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+        }
+
+        .tabs {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          margin: 2px 0 10px;
+        }
+
+        .tab {
+          border-radius: 999px;
+          padding: 8px 10px;
+          font-size: 12px;
+          font-weight: 520;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          background: rgba(0, 0, 0, 0.02);
+          cursor: pointer;
+          color: #0b1c33;
+        }
+
+        .tabActive {
+          background: rgba(245, 158, 11, 0.2);
+          border-color: rgba(245, 158, 11, 0.35);
+        }
+
+        .chartWrap {
+          background: linear-gradient(180deg, rgba(27, 115, 255, 0.06), rgba(255, 255, 255, 1));
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: 14px;
+          padding: 10px 10px 6px;
+          overflow: hidden;
+        }
+
+        .axisLabel {
+          font-size: 11px;
+          fill: rgba(11, 28, 51, 0.55);
+          font-weight: 500;
+        }
+
+        .alert {
+          margin-top: 8px;
+          font-size: 12px;
+          color: #7a4d00;
+          font-weight: 520;
+        }
+
+        .chips {
           margin-top: 10px;
           display: flex;
           gap: 10px;
@@ -277,6 +463,16 @@ export default function Page() {
           box-shadow: 0 0 0 5px rgba(27, 115, 255, 0.12);
         }
 
+        .dotOk {
+          background: var(--ok);
+          box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.12);
+        }
+
+        .dotWarn {
+          background: var(--warn);
+          box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.12);
+        }
+
         .centerTitle {
           text-align: center;
           font-weight: 520;
@@ -290,6 +486,7 @@ export default function Page() {
           margin: 0 auto 22px;
           max-width: 760px;
           color: var(--muted);
+          font-weight: 400;
           font-size: 13px;
         }
 
@@ -327,6 +524,7 @@ export default function Page() {
         .stepText {
           margin: 0;
           color: #2b3d5a;
+          font-weight: 400;
           font-size: 12px;
           line-height: 1.4;
         }
@@ -357,6 +555,7 @@ export default function Page() {
         .industryCard p {
           margin: 0;
           color: #2b3d5a;
+          font-weight: 400;
           font-size: 12px;
         }
 
@@ -364,6 +563,7 @@ export default function Page() {
           text-align: center;
           padding: 26px 0 34px;
           color: #2b3d5a;
+          font-weight: 400;
           font-size: 12px;
         }
 
@@ -422,6 +622,7 @@ export default function Page() {
         .popupSub {
           margin: 6px 0 0;
           color: #2b3d5a;
+          font-weight: 400;
           font-size: 12px;
           line-height: 1.4;
         }
@@ -491,6 +692,7 @@ export default function Page() {
           background: linear-gradient(180deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.08));
           border: 1px solid rgba(34, 197, 94, 0.25);
           color: #0b1c33;
+          font-weight: 400;
           font-size: 13px;
           line-height: 1.45;
         }
@@ -542,6 +744,11 @@ export default function Page() {
           .row {
             grid-template-columns: 1fr;
           }
+          .heroLeft::before,
+          .heroLeft::after {
+            inset: -80px -24px -80px -24px;
+            mask-image: none;
+          }
         }
       `}</style>
 
@@ -568,7 +775,7 @@ export default function Page() {
       <section className="hero">
         <div className="container">
           <div className="hero-grid">
-            <div>
+            <div className="heroLeft">
               <h1>
                 Smart IoT sensors for critical goods.
                 <br />
@@ -581,24 +788,88 @@ export default function Page() {
                 cellular and satellite connectivity.
                 <br />
                 If an incident happens, it is automatically recorded and sealed into a <strong>blockchain ledger</strong>,
-                turning it into trusted proof for <strong>audits</strong>, <strong>insurance</strong> and <strong>compliance</strong>.
+                turning it into trusted proof for <strong>audits</strong>, <strong>insurance</strong> and{" "}
+                <strong>compliance</strong>.
               </div>
 
               <div className="hero-tagline">From sensors → proof → payment.</div>
             </div>
 
-            {/* VISUAL */}
-            <div className="visualCard">
-              <img className="visualImg" src="/assets/hero-iot-proof.png" alt="IoT monitoring to blockchain proof" />
-              <div className="visualCaption">
+            {/* DASHBOARD (graphs) */}
+            <div className="dashCard">
+              <div className="dashTop">
+                <div className="dashTitle">Live monitoring</div>
+                <div className="online">
+                  <span className="onlineDot" />
+                  Sensors online
+                </div>
+              </div>
+
+              <div className="tabs">
+                {(["temp", "humidity", "vibration", "co2"] as Metric[]).map((m) => (
+                  <button
+                    key={m}
+                    className={`tab ${metric === m ? "tabActive" : ""}`}
+                    onClick={() => setMetric(m)}
+                    type="button"
+                  >
+                    {SERIES[m].label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="chartWrap">
+                <svg width="100%" viewBox={`0 0 ${chart.W} ${chart.H}`} role="img" aria-label="Sensor chart">
+                  {/* grid */}
+                  {Array.from({ length: 5 }).map((_, i) => {
+                    const y = chart.padY + (i / 4) * (chart.H - chart.padY * 2)
+                    return (
+                      <line
+                        key={i}
+                        x1={chart.padX}
+                        y1={y}
+                        x2={chart.W - chart.padX}
+                        y2={y}
+                        stroke="rgba(11, 28, 51, 0.08)"
+                        strokeWidth="1"
+                      />
+                    )
+                  })}
+
+                  {/* axis labels (min/max) */}
+                  <text x={chart.padX} y={14} className="axisLabel">
+                    {chart.max.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
+                  </text>
+                  <text x={chart.padX} y={chart.H - 4} className="axisLabel">
+                    {chart.min.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
+                  </text>
+
+                  {/* line */}
+                  <polyline
+                    points={chart.points}
+                    fill="none"
+                    stroke="rgba(27,115,255,0.95)"
+                    strokeWidth="3.5"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+
+              <div className="alert">{chart.s.alert}</div>
+
+              <div className="chips">
                 <span className="chip">
-                  <span className="dot" /> Realtime monitoring
+                  <span className="dot dotWarn" />
+                  Incident captured
                 </span>
                 <span className="chip">
-                  <span className="dot" /> Cellular + Satellite
+                  <span className="dot" />
+                  Cellular + Satellite
                 </span>
                 <span className="chip">
-                  <span className="dot" /> Blockchain proof
+                  <span className="dot dotOk" />
+                  Blockchain proof
                 </span>
               </div>
             </div>
@@ -681,7 +952,7 @@ export default function Page() {
               <div className="successBox">
                 <div className="successIcon">✓</div>
                 <div>
-                  Request received. A confirmation email has been sent. If you don’t see it, check Spam or contact{" "}
+                  ✅ Request received. A confirmation email has been sent. If you don’t see it, please check Spam or contact{" "}
                   <b>contact@enthalpy.site</b>.
                 </div>
               </div>
@@ -698,11 +969,23 @@ export default function Page() {
                 <div className="row">
                   <div>
                     <label>Name (optional)</label>
-                    <input name="name" placeholder="Your name" value={form.name} onChange={onChange} autoComplete="name" />
+                    <input
+                      name="name"
+                      placeholder="Your name"
+                      value={form.name}
+                      onChange={onChange}
+                      autoComplete="name"
+                    />
                   </div>
                   <div>
                     <label>Company Name *</label>
-                    <input name="company" placeholder="Company" value={form.company} onChange={onChange} required />
+                    <input
+                      name="company"
+                      placeholder="Company"
+                      value={form.company}
+                      onChange={onChange}
+                      required
+                    />
                   </div>
                 </div>
 
