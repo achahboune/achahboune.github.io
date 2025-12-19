@@ -97,8 +97,6 @@ export default function Page() {
           --bg: #f5f7fb;
           --card: #ffffff;
           --ok: #22c55e;
-          --warn: #f59e0b;
-          --risk: #ef4444;
           --label: #51627f;
         }
 
@@ -223,7 +221,6 @@ export default function Page() {
         .hero-copy {
           margin-top: 14px;
           color: #2b3d5a;
-          font-weight: 400;
           max-width: 620px;
           line-height: 1.6;
           font-size: 14px;
@@ -293,7 +290,6 @@ export default function Page() {
           margin: 0 auto 22px;
           max-width: 760px;
           color: var(--muted);
-          font-weight: 400;
           font-size: 13px;
         }
 
@@ -331,7 +327,6 @@ export default function Page() {
         .stepText {
           margin: 0;
           color: #2b3d5a;
-          font-weight: 400;
           font-size: 12px;
           line-height: 1.4;
         }
@@ -362,7 +357,6 @@ export default function Page() {
         .industryCard p {
           margin: 0;
           color: #2b3d5a;
-          font-weight: 400;
           font-size: 12px;
         }
 
@@ -370,7 +364,6 @@ export default function Page() {
           text-align: center;
           padding: 26px 0 34px;
           color: #2b3d5a;
-          font-weight: 400;
           font-size: 12px;
         }
 
@@ -429,7 +422,6 @@ export default function Page() {
         .popupSub {
           margin: 6px 0 0;
           color: #2b3d5a;
-          font-weight: 400;
           font-size: 12px;
           line-height: 1.4;
         }
@@ -499,7 +491,6 @@ export default function Page() {
           background: linear-gradient(180deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.08));
           border: 1px solid rgba(34, 197, 94, 0.25);
           color: #0b1c33;
-          font-weight: 400;
           font-size: 13px;
           line-height: 1.45;
         }
@@ -585,42 +576,33 @@ export default function Page() {
               </h1>
 
               <div className="hero-copy">
-                Enthalpy monitors <strong>temperature</strong>, <strong>humidity</strong>,{" "}
-                <strong>vibration</strong> and <strong>CO₂</strong> in real time — in warehouses,
-                trucks, and containers <strong>even at sea</strong> via cellular and satellite
-                connectivity.
+                Enthalpy monitors <strong>temperature</strong>, <strong>humidity</strong>, <strong>vibration</strong> and{" "}
+                <strong>CO₂</strong> in real time — in warehouses, trucks, and containers <strong>even at sea</strong> via
+                cellular and satellite connectivity.
                 <br />
-                If an incident happens, it is automatically recorded and sealed into a{" "}
-                <strong>blockchain ledger</strong>, turning it into trusted proof for{" "}
-                <strong>audits</strong>, <strong>insurance</strong> and <strong>compliance</strong>.
+                If an incident happens, it is automatically recorded and sealed into a <strong>blockchain ledger</strong>,
+                turning it into trusted proof for <strong>audits</strong>, <strong>insurance</strong> and <strong>compliance</strong>.
               </div>
 
               <div className="hero-tagline">From sensors → proof → payment.</div>
             </div>
 
             {/* VISUAL */}
-            {/* VISUAL */}
-<div className="visualCard">
-  <img
-    className="visualImg"
-    src="/assets/hero-iot-proof.png"
-    alt="Realtime IoT monitoring via cellular + satellite, sealed as blockchain proof"
-  />
-  <div className="visualCaption">
-    <span className="chip">
-      <span className="dot" />
-      Realtime monitoring
-    </span>
-    <span className="chip">
-      <span className="dot" />
-      Cellular + Satellite
-    </span>
-    <span className="chip">
-      <span className="dot" />
-      Blockchain proof
-    </span>
-  </div>
-</div>
+            <div className="visualCard">
+              <img className="visualImg" src="/assets/hero-iot-proof.png" alt="IoT monitoring to blockchain proof" />
+              <div className="visualCaption">
+                <span className="chip">
+                  <span className="dot" /> Realtime monitoring
+                </span>
+                <span className="chip">
+                  <span className="dot" /> Cellular + Satellite
+                </span>
+                <span className="chip">
+                  <span className="dot" /> Blockchain proof
+                </span>
+              </div>
+            </div>
+          </div>
 
           <div className="centerTitle">From sensors to proof</div>
           <div className="centerSub">
@@ -699,7 +681,7 @@ export default function Page() {
               <div className="successBox">
                 <div className="successIcon">✓</div>
                 <div>
-                  ✅ Request received. A confirmation email has been sent. If you don’t see it, please check Spam or contact{" "}
+                  Request received. A confirmation email has been sent. If you don’t see it, check Spam or contact{" "}
                   <b>contact@enthalpy.site</b>.
                 </div>
               </div>
@@ -716,23 +698,11 @@ export default function Page() {
                 <div className="row">
                   <div>
                     <label>Name (optional)</label>
-                    <input
-                      name="name"
-                      placeholder="Your name"
-                      value={form.name}
-                      onChange={onChange}
-                      autoComplete="name"
-                    />
+                    <input name="name" placeholder="Your name" value={form.name} onChange={onChange} autoComplete="name" />
                   </div>
                   <div>
                     <label>Company Name *</label>
-                    <input
-                      name="company"
-                      placeholder="Company"
-                      value={form.company}
-                      onChange={onChange}
-                      required
-                    />
+                    <input name="company" placeholder="Company" value={form.company} onChange={onChange} required />
                   </div>
                 </div>
 
