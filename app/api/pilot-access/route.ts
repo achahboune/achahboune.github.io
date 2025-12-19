@@ -3,16 +3,12 @@ import { Resend } from "resend"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST,OPTIONS,GET",
+  "Access-Control-Allow-Methods": "POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 }
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders })
-}
-
-export function GET() {
-  return NextResponse.json({ ok: true }, { status: 200, headers: corsHeaders })
 }
 
 export async function POST(req: Request) {
@@ -38,13 +34,7 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.RESEND_API_KEY
     const to = process.env.PILOT_TO_EMAIL
-
-    // ✅ Tant que ton domaine n'est pas vérifié chez Resend:
-    // Mets PILOT_FROM_EMAIL = "Enthalpy <onboarding@resend.dev>"
-    // Après vérification: "Enthalpy <no-reply@enthalpy.site>"
-    const from =
-      (process.env.PILOT_FROM_EMAIL && process.env.PILOT_FROM_EMAIL.trim()) ||
-      "Enthalpy <onboarding@resend.dev>"
+    const from = process.env.PILOT_FROM_EMAIL || "Enthalpy <no-reply@enthalpy.site>"
 
     if (!apiKey) {
       return NextResponse.json(
@@ -61,12 +51,12 @@ export async function POST(req: Request) {
 
     const resend = new Resend(apiKey)
 
-    // Email admin
+    // Email vers toi (admin)
     await resend.emails.send({
       from,
       to,
       replyTo: email,
-      subject: `Enthalpy — Pilot access request (${company})`,
+      subject: `Pilot access request — ${company}`,
       text:
         `Pilot access request\n\n` +
         `Name: ${name || "-"}\n` +
@@ -75,15 +65,17 @@ export async function POST(req: Request) {
         `Message:\n${message}\n`,
     })
 
-    // Confirmation client (courte & clean)
+    // Confirmation au client (court + propre)
     try {
       await resend.emails.send({
         from,
         to: email,
-        subject: "Enthalpy — Request received",
+        subject: "Enthalpy — request received",
         text:
-          `Thanks${name ? " " + name : ""}, we received your request. ` +
-          `We’ll get back to you shortly.\n\n— Enthalpy Team`,
+          `Thanks${name ? " " + name : ""} — your pilot access request is received.\n` +
+          `We’ll reply shortly.\n\n` +
+          `— Enthalpy\n` +
+          `contact@enthalpy.site`,
       })
     } catch (e) {
       console.warn("CONFIRMATION_EMAIL_FAILED", e)
