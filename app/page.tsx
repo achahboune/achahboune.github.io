@@ -126,7 +126,6 @@ export default function Page() {
     }
   }
 
-  // ESC close
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setPopupOpen(false)
@@ -137,26 +136,36 @@ export default function Page() {
 
   const chart = useMemo(() => {
     const s = SERIES[metric]
-    const W = 560
-    const H = 230
-    const padX = 18
-    const padY = 16
+    const W = 900
+    const H = 420
+    const padX = 26
+    const padY = 22
 
     const min =
-      typeof s.yMin === "number" ? s.yMin : Math.min(...s.data) - (Math.max(...s.data) - Math.min(...s.data)) * 0.08
+      typeof s.yMin === "number"
+        ? s.yMin
+        : Math.min(...s.data) - (Math.max(...s.data) - Math.min(...s.data)) * 0.08
+
     const max =
-      typeof s.yMax === "number" ? s.yMax : Math.max(...s.data) + (Math.max(...s.data) - Math.min(...s.data)) * 0.08
+      typeof s.yMax === "number"
+        ? s.yMax
+        : Math.max(...s.data) + (Math.max(...s.data) - Math.min(...s.data)) * 0.08
 
-    const points = s.data
-      .map((v, i) => {
-        const x = padX + (i / (s.data.length - 1)) * (W - padX * 2)
-        const t = (v - min) / (max - min || 1)
-        const y = padY + (1 - clamp(t, 0, 1)) * (H - padY * 2)
-        return `${x.toFixed(1)},${y.toFixed(1)}`
-      })
-      .join(" ")
+    const pts = s.data.map((v, i) => {
+      const x = padX + (i / (s.data.length - 1)) * (W - padX * 2)
+      const t = (v - min) / (max - min || 1)
+      const y = padY + (1 - clamp(t, 0, 1)) * (H - padY * 2)
+      return { x, y }
+    })
 
-    return { W, H, padX, padY, min, max, points, s }
+    const points = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")
+    const area = [
+      `${padX},${H - padY}`,
+      ...pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`),
+      `${W - padX},${H - padY}`,
+    ].join(" ")
+
+    return { W, H, padX, padY, min, max, points, area, s }
   }, [metric])
 
   return (
@@ -164,419 +173,417 @@ export default function Page() {
       <style jsx global>{`
         :root {
           --blue: #1b73ff;
-          --dark: #0b1c33;
-          --muted: #6c7a92;
-          --bg: #f5f7fb;
-          --card: #ffffff;
+          --cyan: #00c8ff;
+          --dark: #071628;
+          --glass: rgba(255, 255, 255, 0.42);
+          --shadow: 0 30px 90px rgba(0, 0, 0, 0.22);
+          --shadow2: 0 18px 60px rgba(0, 0, 0, 0.16);
           --ok: #22c55e;
           --warn: #f59e0b;
-          --risk: #ef4444;
-          --label: #51627f;
         }
 
         * {
           box-sizing: border-box;
         }
 
+        html,
+        body {
+          height: 100%;
+        }
+
         body {
           margin: 0;
           font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-          font-weight: 400;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
-          background: radial-gradient(
-              1200px 600px at 70% 0%,
-              rgba(27, 115, 255, 0.12),
-              transparent 60%
-            ),
-            var(--bg);
           color: var(--dark);
+          overflow-x: hidden;
+
+          /* ✅ BACKGROUND PLEIN ÉCRAN */
+          background: url("/assets/bg-ocean.jpg") center / cover no-repeat fixed;
         }
 
-        strong,
-        b {
-          font-weight: 520;
+        /* voile global pro */
+        body::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          background:
+            radial-gradient(1100px 620px at 14% 10%, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.08)),
+            radial-gradient(1400px 900px at 86% 16%, rgba(27, 115, 255, 0.16), rgba(27, 115, 255, 0.02)),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.10));
+          pointer-events: none;
+          z-index: 0;
         }
 
+        .wrap {
+          position: relative;
+          z-index: 1;
+          min-height: 100svh;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* ✅ “container” plein écran (pas petit au milieu) */
         .container {
-          width: 100%;
-          max-width: 1240px;
+          width: min(1800px, calc(100vw - 64px)); /* 92vw environ */
           margin: 0 auto;
-          padding: 0 24px;
         }
 
         header {
           position: sticky;
           top: 0;
-          z-index: 20;
-          background: rgba(245, 247, 251, 0.92);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+          z-index: 50;
+          padding: 14px 0;
+          background: rgba(255, 255, 255, 0.10);
+          backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.16);
         }
 
         nav {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          padding: 14px 0;
+          justify-content: space-between;
+          gap: 16px;
         }
 
-        .logo {
+        .brand {
           display: flex;
           align-items: center;
           gap: 12px;
         }
 
-        .logo img {
-          height: 52px;
-          width: auto;
+        .brand img {
+          width: 46px;
+          height: 46px;
         }
 
-        .logo strong {
-          color: var(--dark);
-          font-size: 18px;
-          line-height: 1;
-          font-weight: 560;
-        }
-
-        .logo span {
+        .brand strong {
           display: block;
-          margin-top: 2px;
+          font-weight: 650;
+          font-size: 16px;
+          line-height: 1.1;
+        }
+
+        .brand span {
+          display: block;
           font-size: 11px;
           letter-spacing: 0.18em;
-          color: #4a5d7a;
-          font-weight: 520;
+          color: rgba(7, 22, 40, 0.62);
+          font-weight: 650;
+          margin-top: 3px;
           white-space: nowrap;
         }
 
         .btn {
-          padding: 12px 22px;
+          padding: 12px 18px;
           border-radius: 999px;
-          border: none;
-          font-weight: 520;
+          border: 1px solid rgba(255, 255, 255, 0.30);
+          background: rgba(255, 255, 255, 0.14);
+          color: #061325;
+          font-weight: 700;
           cursor: pointer;
+          backdrop-filter: blur(12px);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+          transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
         }
 
-        .btn-primary {
-          background: linear-gradient(135deg, #1b73ff, #00c8ff);
+        .btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18);
+          filter: saturate(1.05);
+        }
+
+        .btnPrimary {
+          border: none;
+          background: linear-gradient(135deg, var(--blue), var(--cyan));
           color: #fff;
-          box-shadow: 0 14px 30px rgba(27, 115, 255, 0.35);
+          box-shadow: 0 18px 46px rgba(27, 115, 255, 0.34);
         }
 
-        .btn-ghost {
-          background: rgba(0, 0, 0, 0.04);
-          color: #0b1c33;
-          border: 1px solid rgba(0, 0, 0, 0.08);
+        main {
+          flex: 1;
+          display: flex;
+          align-items: stretch;
         }
 
-        .hero {
-          padding: 46px 0 26px;
+        /* ✅ zone principale = PLEIN ÉCRAN */
+        .stage {
+          min-height: calc(100svh - 78px);
+          padding: clamp(18px, 3vh, 44px) 0 22px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center; /* remplit la page */
+          gap: 18px;
         }
 
-        .hero-grid {
+        /* ✅ Grand “panel” pro comme les landing premium */
+        .panel {
+          width: 100%;
+          border-radius: 28px;
+          background: rgba(255, 255, 255, 0.16);
+          border: 1px solid rgba(255, 255, 255, 0.20);
+          backdrop-filter: blur(18px);
+          box-shadow: var(--shadow);
+          padding: clamp(18px, 2.2vw, 28px);
+        }
+
+        .layout {
           display: grid;
-          grid-template-columns: 1.05fr 0.95fr;
-          gap: 40px;
-          align-items: start;
+          grid-template-columns: 1.25fr 1fr;
+          gap: 26px;
+          align-items: stretch;
+
+          /* ✅ grosse hauteur */
+          min-height: min(820px, 78vh);
         }
 
-        .heroLeft {
+        .glass {
+          background: var(--glass);
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          border-radius: 22px;
+          backdrop-filter: blur(16px);
+          box-shadow: var(--shadow2);
+        }
+
+        .heroCard {
           position: relative;
-          padding: 6px 0;
+          overflow: hidden;
+          padding: 28px 28px 22px;
         }
 
-        /* 👇 Filigrane (côté gauche) */
-        .heroLeft::before {
+        .heroCard::before {
           content: "";
           position: absolute;
-          inset: -80px -40px -80px -120px;
-          background: url("/assets/hero-connectivity-bg.png") left center / cover no-repeat;
-          opacity: 0.24;
-          filter: saturate(1.05) contrast(1.05);
+          inset: 0;
+          background: url("/assets/hero-iot-proof.png") right center / cover no-repeat;
+          opacity: 0.40;
+          filter: saturate(1.08) contrast(1.06);
           pointer-events: none;
-          z-index: 0;
-          mask-image: linear-gradient(
+        }
+
+        .heroCard::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
             90deg,
-            rgba(0, 0, 0, 1) 0%,
-            rgba(0, 0, 0, 0.95) 45%,
-            rgba(0, 0, 0, 0) 78%
+            rgba(255, 255, 255, 0.88) 0%,
+            rgba(255, 255, 255, 0.62) 52%,
+            rgba(255, 255, 255, 0.16) 100%
           );
-        }
-
-        /* 👇 voile pour garder la lisibilité du texte */
-        .heroLeft::after {
-          content: "";
-          position: absolute;
-          inset: -80px -40px -80px -120px;
-          background: linear-gradient(90deg, rgba(245, 247, 251, 0.94), rgba(245, 247, 251, 0.78), rgba(245, 247, 251, 0));
           pointer-events: none;
-          z-index: 0;
         }
 
-        .heroLeft > * {
+        .heroInner {
           position: relative;
-          z-index: 1;
+          z-index: 2;
+          max-width: 860px;
         }
 
         h1 {
-          font-size: clamp(36px, 4.3vw, 64px);
           margin: 0;
-          letter-spacing: -0.02em;
-          line-height: 1.04;
+          letter-spacing: -0.025em;
+          line-height: 1.03;
+          font-size: clamp(40px, 3.3vw, 58px);
           font-weight: 620;
         }
 
-        h1 .accent {
+        .accent {
           color: var(--blue);
+          font-weight: 620;
         }
 
-        .hero-copy {
+        .lead {
           margin-top: 14px;
-          color: #2b3d5a;
-          font-weight: 400;
-          max-width: 620px;
-          line-height: 1.6;
-          font-size: 14px;
-        }
-
-        .hero-tagline {
-          margin-top: 12px;
-          color: var(--blue);
-          font-weight: 520;
-          font-size: 13px;
-        }
-
-        /* DASHBOARD CARD */
-        .dashCard {
-          background: var(--card);
-          border-radius: 18px;
-          padding: 14px 14px 12px;
-          box-shadow: 0 22px 60px rgba(6, 19, 37, 0.12);
-          border: 1px solid rgba(0, 0, 0, 0.05);
-          overflow: hidden;
-        }
-
-        .dashTop {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 2px 4px 10px;
-        }
-
-        .dashTitle {
+          font-size: 15.5px;
+          line-height: 1.65;
+          color: rgba(7, 22, 40, 0.78);
           font-weight: 560;
-          font-size: 13px;
-          color: #0b1c33;
-          letter-spacing: -0.01em;
-        }
-
-        .online {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 12px;
-          color: #2b3d5a;
-          font-weight: 450;
-          background: rgba(34, 197, 94, 0.12);
-          border: 1px solid rgba(34, 197, 94, 0.18);
-          padding: 6px 10px;
-          border-radius: 999px;
-        }
-
-        .onlineDot {
-          width: 8px;
-          height: 8px;
-          border-radius: 99px;
-          background: var(--ok);
-          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
-        }
-
-        .tabs {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
-          margin: 2px 0 10px;
-        }
-
-        .tab {
-          border-radius: 999px;
-          padding: 8px 10px;
-          font-size: 12px;
-          font-weight: 520;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          background: rgba(0, 0, 0, 0.02);
-          cursor: pointer;
-          color: #0b1c33;
-        }
-
-        .tabActive {
-          background: rgba(245, 158, 11, 0.2);
-          border-color: rgba(245, 158, 11, 0.35);
-        }
-
-        .chartWrap {
-          background: linear-gradient(180deg, rgba(27, 115, 255, 0.06), rgba(255, 255, 255, 1));
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: 14px;
-          padding: 10px 10px 6px;
-          overflow: hidden;
-        }
-
-        .axisLabel {
-          font-size: 11px;
-          fill: rgba(11, 28, 51, 0.55);
-          font-weight: 500;
-        }
-
-        .alert {
-          margin-top: 8px;
-          font-size: 12px;
-          color: #7a4d00;
-          font-weight: 520;
+          max-width: 760px;
         }
 
         .chips {
-          margin-top: 10px;
+          margin-top: 16px;
           display: flex;
-          gap: 10px;
           flex-wrap: wrap;
+          gap: 10px;
         }
 
         .chip {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          padding: 10px 12px;
           border-radius: 999px;
-          padding: 7px 10px;
-          font-size: 11px;
-          font-weight: 450;
-          background: rgba(0, 0, 0, 0.04);
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          color: #0b1c33;
+          background: rgba(255, 255, 255, 0.62);
+          border: 1px solid rgba(255, 255, 255, 0.30);
+          font-size: 12.5px;
+          font-weight: 800;
+          color: rgba(7, 22, 40, 0.82);
+          backdrop-filter: blur(10px);
         }
 
         .dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
+          width: 9px;
+          height: 9px;
+          border-radius: 999px;
           background: var(--blue);
-          box-shadow: 0 0 0 5px rgba(27, 115, 255, 0.12);
+          box-shadow: 0 0 0 5px rgba(27, 115, 255, 0.16);
         }
 
         .dotOk {
           background: var(--ok);
-          box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.12);
+          box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.16);
         }
 
         .dotWarn {
           background: var(--warn);
-          box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.12);
+          box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.16);
         }
 
-        .centerTitle {
-          text-align: center;
-          font-weight: 520;
-          font-size: 18px;
-          margin: 26px 0 6px;
-          letter-spacing: -0.01em;
+        .chartCard {
+          padding: 18px 18px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
 
-        .centerSub {
-          text-align: center;
-          margin: 0 auto 22px;
-          max-width: 760px;
-          color: var(--muted);
-          font-weight: 400;
+        .topRow {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .cardTitle {
+          font-weight: 900;
           font-size: 13px;
+          color: rgba(7, 22, 40, 0.86);
+          letter-spacing: 0.02em;
         }
 
-        .grid3 {
+        .live {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 12px;
+          border-radius: 999px;
+          background: rgba(34, 197, 94, 0.14);
+          border: 1px solid rgba(34, 197, 94, 0.18);
+          font-size: 12px;
+          font-weight: 850;
+        }
+
+        .liveDot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: var(--ok);
+          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14);
+        }
+
+        .tabs {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+
+        .tab {
+          border-radius: 999px;
+          padding: 10px 10px;
+          font-size: 12px;
+          font-weight: 850;
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          background: rgba(255, 255, 255, 0.20);
+          cursor: pointer;
+          color: rgba(7, 22, 40, 0.86);
+          backdrop-filter: blur(10px);
+          transition: background 140ms ease, transform 140ms ease;
+        }
+
+        .tab:hover {
+          transform: translateY(-1px);
+          background: rgba(255, 255, 255, 0.28);
+        }
+
+        .tabActive {
+          background: rgba(27, 115, 255, 0.18);
+          border-color: rgba(27, 115, 255, 0.25);
+        }
+
+        .chartWrap {
+          background: rgba(255, 255, 255, 0.56);
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          border-radius: 18px;
+          padding: 12px 12px 10px;
+          overflow: hidden;
+          backdrop-filter: blur(10px);
+          flex: 1;
+          display: flex;
+          align-items: center;
+        }
+
+        .axisLabel {
+          font-size: 11px;
+          fill: rgba(7, 22, 40, 0.58);
+          font-weight: 850;
+        }
+
+        .alert {
+          font-size: 12.5px;
+          font-weight: 900;
+          color: rgba(122, 77, 0, 0.95);
+          background: rgba(245, 158, 11, 0.16);
+          border: 1px solid rgba(245, 158, 11, 0.20);
+          padding: 12px 14px;
+          border-radius: 14px;
+        }
+
+        .features {
+          margin-top: 18px;
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 18px;
+          gap: 14px;
         }
 
-        .stepCard {
-          background: #fff;
-          border-radius: 14px;
-          padding: 18px 18px 16px;
-          box-shadow: 0 14px 40px rgba(6, 19, 37, 0.08);
-          border: 1px solid rgba(0, 0, 0, 0.05);
-          min-height: 96px;
-          display: grid;
-          grid-template-columns: 10px 1fr;
-          gap: 12px;
-          align-items: start;
+        .feat {
+          padding: 16px 16px;
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.26);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          backdrop-filter: blur(12px);
+          box-shadow: var(--shadow2);
         }
 
-        .bar {
-          width: 4px;
-          border-radius: 999px;
-          height: 100%;
-        }
-
-        .stepTitle {
-          font-weight: 520;
-          margin: 0 0 4px;
+        .feat strong {
+          display: block;
           font-size: 13px;
+          font-weight: 950;
+          margin-bottom: 6px;
         }
 
-        .stepText {
+        .feat p {
           margin: 0;
-          color: #2b3d5a;
-          font-weight: 400;
-          font-size: 12px;
+          font-size: 12.5px;
           line-height: 1.4;
-        }
-
-        .industryTitle {
-          text-align: center;
-          font-weight: 520;
-          font-size: 20px;
-          margin: 26px 0 14px;
-          letter-spacing: -0.01em;
-        }
-
-        .industryCard {
-          background: #fff;
-          border-radius: 14px;
-          padding: 18px;
-          box-shadow: 0 14px 40px rgba(6, 19, 37, 0.08);
-          border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .industryCard h3 {
-          margin: 0 0 6px;
-          color: var(--blue);
-          font-weight: 520;
-          font-size: 14px;
-        }
-
-        .industryCard p {
-          margin: 0;
-          color: #2b3d5a;
-          font-weight: 400;
-          font-size: 12px;
+          color: rgba(7, 22, 40, 0.72);
+          font-weight: 650;
         }
 
         .footer {
+          margin-top: 12px;
           text-align: center;
-          padding: 26px 0 34px;
-          color: #2b3d5a;
-          font-weight: 400;
-          font-size: 12px;
+          color: rgba(255, 255, 255, 0.94);
+          font-weight: 900;
+          text-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
         }
 
-        .footer .email {
-          font-weight: 520;
-          color: #0b1c33;
-          font-size: 13px;
-        }
-
-        .footer .loc {
+        .footer small {
+          display: block;
           margin-top: 6px;
-          color: #6c7a92;
-          font-weight: 450;
+          font-weight: 850;
+          color: rgba(255, 255, 255, 0.84);
         }
 
         /* POPUP */
@@ -596,33 +603,34 @@ export default function Page() {
         }
 
         .popup {
-          background: #fff;
+          background: rgba(255, 255, 255, 0.92);
           width: 720px;
           max-width: 100%;
           border-radius: 18px;
           overflow: hidden;
           position: relative;
           box-shadow: 0 30px 90px rgba(0, 0, 0, 0.25);
-          border: 1px solid rgba(0, 0, 0, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.35);
+          backdrop-filter: blur(12px);
         }
 
         .popupHead {
           padding: 18px 18px 10px;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-          background: linear-gradient(180deg, rgba(27, 115, 255, 0.06), rgba(255, 255, 255, 1));
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+          background: linear-gradient(180deg, rgba(27, 115, 255, 0.12), rgba(255, 255, 255, 0.92));
         }
 
         .popupTitle {
           margin: 0;
-          font-weight: 520;
+          font-weight: 950;
           letter-spacing: -0.02em;
           font-size: 18px;
         }
 
         .popupSub {
           margin: 6px 0 0;
-          color: #2b3d5a;
-          font-weight: 400;
+          color: rgba(7, 22, 40, 0.78);
+          font-weight: 700;
           font-size: 12px;
           line-height: 1.4;
         }
@@ -640,8 +648,8 @@ export default function Page() {
         label {
           display: block;
           font-size: 12px;
-          font-weight: 450;
-          color: var(--label);
+          font-weight: 850;
+          color: rgba(7, 22, 40, 0.7);
           margin: 0 0 6px;
         }
 
@@ -649,13 +657,13 @@ export default function Page() {
         textarea {
           width: 100%;
           border-radius: 12px;
-          border: 1px solid rgba(0, 0, 0, 0.12);
+          border: 1px solid rgba(0, 0, 0, 0.16);
           padding: 12px 12px;
           font-size: 13px;
-          font-weight: 400;
+          font-weight: 800;
           outline: none;
-          background: #fff;
-          color: #0b1c33;
+          background: rgba(255, 255, 255, 0.9);
+          color: #061325;
         }
 
         input:focus,
@@ -679,7 +687,7 @@ export default function Page() {
         .err {
           margin-top: 10px;
           color: #b91c1c;
-          font-weight: 450;
+          font-weight: 950;
           font-size: 12px;
         }
 
@@ -689,10 +697,10 @@ export default function Page() {
           align-items: flex-start;
           padding: 14px;
           border-radius: 14px;
-          background: linear-gradient(180deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.08));
-          border: 1px solid rgba(34, 197, 94, 0.25);
-          color: #0b1c33;
-          font-weight: 400;
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.2);
+          color: #061325;
+          font-weight: 800;
           font-size: 13px;
           line-height: 1.45;
         }
@@ -705,7 +713,7 @@ export default function Page() {
           place-items: center;
           background: rgba(34, 197, 94, 0.18);
           border: 1px solid rgba(34, 197, 94, 0.28);
-          font-weight: 700;
+          font-weight: 950;
           color: #15803d;
           flex: 0 0 auto;
           margin-top: 1px;
@@ -719,7 +727,7 @@ export default function Page() {
           height: 40px;
           border-radius: 999px;
           border: none;
-          background: #fff;
+          background: rgba(255, 255, 255, 0.92);
           font-size: 22px;
           cursor: pointer;
           box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
@@ -734,297 +742,271 @@ export default function Page() {
           overflow: hidden;
         }
 
-        @media (max-width: 980px) {
-          .hero-grid {
-            grid-template-columns: 1fr;
+        @media (max-width: 1120px) {
+          .container {
+            width: calc(100vw - 28px);
           }
-          .grid3 {
+          .layout {
             grid-template-columns: 1fr;
+            min-height: auto;
+          }
+          header {
+            position: relative;
+          }
+          body {
+            background-attachment: scroll;
           }
           .row {
             grid-template-columns: 1fr;
           }
-          .heroLeft::before,
-          .heroLeft::after {
-            inset: -80px -24px -80px -24px;
-            mask-image: none;
+          .features {
+            grid-template-columns: 1fr;
+          }
+          .heroCard::before {
+            opacity: 0.26;
+          }
+          .heroCard::after {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.60));
           }
         }
       `}</style>
 
-      {/* HEADER */}
-      <header>
-        <div className="container">
-          <nav>
-            <div className="logo">
-              <img src="/assets/logo.png" alt="Enthalpy" />
-              <div>
-                <strong>Enthalpy</strong>
-                <span>COLD &amp; CRITICAL MONITORING</span>
-              </div>
-            </div>
-
-            <button className="btn btn-primary" onClick={openPopup}>
-              Request pilot access
-            </button>
-          </nav>
-        </div>
-      </header>
-
-      {/* HERO */}
-      <section className="hero">
-        <div className="container">
-          <div className="hero-grid">
-            <div className="heroLeft">
-              <h1>
-                Smart IoT sensors for critical goods.
-                <br />
-                <span className="accent">Clear proof when something goes wrong.</span>
-              </h1>
-
-              <div className="hero-copy">
-                Enthalpy monitors <strong>temperature</strong>, <strong>humidity</strong>, <strong>vibration</strong> and{" "}
-                <strong>CO₂</strong> in real time — in warehouses, trucks, and containers <strong>even at sea</strong> via
-                cellular and satellite connectivity.
-                <br />
-                If an incident happens, it is automatically recorded and sealed into a <strong>blockchain ledger</strong>,
-                turning it into trusted proof for <strong>audits</strong>, <strong>insurance</strong> and{" "}
-                <strong>compliance</strong>.
-              </div>
-
-              <div className="hero-tagline">From sensors → proof → payment.</div>
-            </div>
-
-            {/* DASHBOARD (graphs) */}
-            <div className="dashCard">
-              <div className="dashTop">
-                <div className="dashTitle">Live monitoring</div>
-                <div className="online">
-                  <span className="onlineDot" />
-                  Sensors online
-                </div>
-              </div>
-
-              <div className="tabs">
-                {(["temp", "humidity", "vibration", "co2"] as Metric[]).map((m) => (
-                  <button
-                    key={m}
-                    className={`tab ${metric === m ? "tabActive" : ""}`}
-                    onClick={() => setMetric(m)}
-                    type="button"
-                  >
-                    {SERIES[m].label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="chartWrap">
-                <svg width="100%" viewBox={`0 0 ${chart.W} ${chart.H}`} role="img" aria-label="Sensor chart">
-                  {/* grid */}
-                  {Array.from({ length: 5 }).map((_, i) => {
-                    const y = chart.padY + (i / 4) * (chart.H - chart.padY * 2)
-                    return (
-                      <line
-                        key={i}
-                        x1={chart.padX}
-                        y1={y}
-                        x2={chart.W - chart.padX}
-                        y2={y}
-                        stroke="rgba(11, 28, 51, 0.08)"
-                        strokeWidth="1"
-                      />
-                    )
-                  })}
-
-                  {/* axis labels (min/max) */}
-                  <text x={chart.padX} y={14} className="axisLabel">
-                    {chart.max.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
-                  </text>
-                  <text x={chart.padX} y={chart.H - 4} className="axisLabel">
-                    {chart.min.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
-                  </text>
-
-                  {/* line */}
-                  <polyline
-                    points={chart.points}
-                    fill="none"
-                    stroke="rgba(27,115,255,0.95)"
-                    strokeWidth="3.5"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-
-              <div className="alert">{chart.s.alert}</div>
-
-              <div className="chips">
-                <span className="chip">
-                  <span className="dot dotWarn" />
-                  Incident captured
-                </span>
-                <span className="chip">
-                  <span className="dot" />
-                  Cellular + Satellite
-                </span>
-                <span className="chip">
-                  <span className="dot dotOk" />
-                  Blockchain proof
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="centerTitle">From sensors to proof</div>
-          <div className="centerSub">
-            Enthalpy turns real-world incidents into trusted evidence that can trigger compliance actions or payments.
-          </div>
-
-          <div className="grid3">
-            <div className="stepCard">
-              <div className="bar" style={{ background: "#1b73ff" }} />
-              <div>
-                <p className="stepTitle">🔔 Sensor event</p>
-                <p className="stepText">A threshold is exceeded (temperature, vibration, CO₂...).</p>
-              </div>
-            </div>
-
-            <div className="stepCard">
-              <div className="bar" style={{ background: "#f59e0b" }} />
-              <div>
-                <p className="stepTitle">🧾 Evidence + timestamp</p>
-                <p className="stepText">Data is captured, timestamped, and stored for traceability.</p>
-              </div>
-            </div>
-
-            <div className="stepCard">
-              <div className="bar" style={{ background: "#22c55e" }} />
-              <div>
-                <p className="stepTitle">🔒 Blockchain ledger</p>
-                <p className="stepText">The incident is sealed into a blockchain record you can prove.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="industryTitle">Industries where a few degrees cost millions</div>
-
-          <div className="grid3">
-            <div className="industryCard">
-              <h3>Pharma &amp; Biotech</h3>
-              <p>Audit-ready traceability.</p>
-            </div>
-            <div className="industryCard">
-              <h3>Food &amp; Frozen</h3>
-              <p>Prevent cold-chain failures.</p>
-            </div>
-            <div className="industryCard">
-              <h3>Logistics &amp; 3PL</h3>
-              <p>Proof of compliance.</p>
-            </div>
-          </div>
-
-          <div className="footer">
-            <div className="email">contact@enthalpy.site</div>
-            <div className="loc">Tangier, Morocco</div>
-          </div>
-        </div>
-      </section>
-
-      {/* POPUP */}
-      <div
-        className={`popup-overlay ${popupOpen ? "active" : ""}`}
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget) closePopup()
-        }}
-      >
-        <div className="popup" onMouseDown={(e) => e.stopPropagation()}>
-          <button className="popup-close" onClick={closePopup} aria-label="Close">
-            ×
-          </button>
-
-          <div className="popupHead">
-            <h3 className="popupTitle">Request pilot access</h3>
-            <p className="popupSub">Tell us about your company and use case. We’ll reply quickly.</p>
-          </div>
-
-          <div className="popupBody">
-            {submitted ? (
-              <div className="successBox">
-                <div className="successIcon">✓</div>
+      <div className="wrap">
+        <header>
+          <div className="container">
+            <nav>
+              <div className="brand">
+                <img src="/assets/logo.png" alt="Enthalpy" />
                 <div>
-                  ✅ Request received. A confirmation email has been sent. If you don’t see it, please check Spam or contact{" "}
-                  <b>contact@enthalpy.site</b>.
+                  <strong>Enthalpy</strong>
+                  <span>COLD &amp; CRITICAL MONITORING</span>
                 </div>
               </div>
-            ) : (
-              <form onSubmit={submitForm}>
-                {/* Honeypot */}
-                <div className="hp">
-                  <label>
-                    Website
-                    <input name="website" value={form.website} onChange={onChange} autoComplete="off" />
-                  </label>
+
+              <button className="btn btnPrimary" onClick={openPopup}>
+                Request pilot access
+              </button>
+            </nav>
+          </div>
+        </header>
+
+        <main>
+          <div className="container">
+            <div className="stage">
+              <div className="panel">
+                <div className="layout">
+                  {/* HERO */}
+                  <section className="glass heroCard">
+                    <div className="heroInner">
+                      <h1>
+                        Smart IoT sensors for critical goods.
+                        <br />
+                        <span className="accent">Blockchain proof &amp; payment when something goes wrong.</span>
+                      </h1>
+
+                      <div className="lead">
+                        Enthalpy monitors <b>temperature</b>, <b>humidity</b>, <b>vibration</b> and <b>CO₂</b> in real time
+                        across <b>warehouses</b>, <b>trucks</b> and <b>containers</b>.
+                        <br />
+                        When an incident happens, the data is <b>timestamped</b> and sealed as <b>proof on blockchain</b> —
+                        and the same blockchain record can trigger <b>automatic payment</b> (insurance, claims, SLA).
+                      </div>
+
+                      <div className="chips">
+                        <span className="chip">
+                          <span className="dot" />
+                          Temperature • Humidity • CO₂ • Vibration
+                        </span>
+                        <span className="chip">
+                          <span className="dot dotOk" />
+                          Proof (blockchain-sealed)
+                        </span>
+                        <span className="chip">
+                          <span className="dot dotWarn" />
+                          Payment (blockchain-triggered)
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* CHART */}
+                  <section className="glass chartCard" aria-label="Analytics">
+                    <div className="topRow">
+                      <div className="cardTitle">Analytics</div>
+                      <div className="live">
+                        <span className="liveDot" />
+                        Live
+                      </div>
+                    </div>
+
+                    <div className="tabs">
+                      {(["temp", "humidity", "vibration", "co2"] as Metric[]).map((m) => (
+                        <button
+                          key={m}
+                          className={`tab ${metric === m ? "tabActive" : ""}`}
+                          onClick={() => setMetric(m)}
+                          type="button"
+                        >
+                          {SERIES[m].label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="chartWrap">
+                      <svg width="100%" viewBox={`0 0 ${chart.W} ${chart.H}`} role="img" aria-label="Sensor chart">
+                        <defs>
+                          <linearGradient id="fillLine" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="rgba(27,115,255,0.26)" />
+                            <stop offset="100%" stopColor="rgba(27,115,255,0.02)" />
+                          </linearGradient>
+                        </defs>
+
+                        {Array.from({ length: 5 }).map((_, i) => {
+                          const y = chart.padY + (i / 4) * (chart.H - chart.padY * 2)
+                          return (
+                            <line
+                              key={i}
+                              x1={chart.padX}
+                              y1={y}
+                              x2={chart.W - chart.padX}
+                              y2={y}
+                              stroke="rgba(7, 22, 40, 0.10)"
+                              strokeWidth="1"
+                            />
+                          )
+                        })}
+
+                        <text x={chart.padX} y={16} className="axisLabel">
+                          {chart.max.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
+                        </text>
+                        <text x={chart.padX} y={chart.H - 6} className="axisLabel">
+                          {chart.min.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
+                        </text>
+
+                        <polygon points={chart.area} fill="url(#fillLine)" />
+
+                        <polyline
+                          points={chart.points}
+                          fill="none"
+                          stroke="rgba(27,115,255,0.95)"
+                          strokeWidth="4.0"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </div>
+
+                    <div className="alert">{chart.s.alert}</div>
+                  </section>
                 </div>
 
-                <div className="row">
+                <div className="features">
+                  <div className="feat">
+                    <strong>Evidence</strong>
+                    <p>Incidents captured, timestamped, and stored as proof.</p>
+                  </div>
+                  <div className="feat">
+                    <strong>Instant alerts</strong>
+                    <p>Real-time notifications when limits are exceeded.</p>
+                  </div>
+                  <div className="feat">
+                    <strong>Blockchain</strong>
+                    <p>Proof + payment flows secured via blockchain records.</p>
+                  </div>
+                </div>
+
+                <div className="footer">
+                  contact@enthalpy.site
+                  <small>Tangier, Morocco</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* POPUP */}
+        <div
+          className={`popup-overlay ${popupOpen ? "active" : ""}`}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closePopup()
+          }}
+        >
+          <div className="popup" onMouseDown={(e) => e.stopPropagation()}>
+            <button className="popup-close" onClick={closePopup} aria-label="Close">
+              ×
+            </button>
+
+            <div className="popupHead">
+              <h3 className="popupTitle">Request pilot access</h3>
+              <p className="popupSub">Tell us about your company and use case. We’ll reply quickly.</p>
+            </div>
+
+            <div className="popupBody">
+              {submitted ? (
+                <div className="successBox">
+                  <div className="successIcon">✓</div>
                   <div>
-                    <label>Name (optional)</label>
+                    ✅ Request received. A confirmation email has been sent. If you don’t see it, please check Spam or contact{" "}
+                    <b>contact@enthalpy.site</b>.
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={submitForm}>
+                  <div className="hp">
+                    <label>
+                      Website
+                      <input name="website" value={form.website} onChange={onChange} autoComplete="off" />
+                    </label>
+                  </div>
+
+                  <div className="row">
+                    <div>
+                      <label>Name (optional)</label>
+                      <input name="name" placeholder="Your name" value={form.name} onChange={onChange} autoComplete="name" />
+                    </div>
+                    <div>
+                      <label>Company Name *</label>
+                      <input name="company" placeholder="Company" value={form.company} onChange={onChange} required />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <label>Work Email *</label>
                     <input
-                      name="name"
-                      placeholder="Your name"
-                      value={form.name}
+                      name="email"
+                      placeholder="name@company.com"
+                      value={form.email}
                       onChange={onChange}
-                      autoComplete="name"
+                      required
+                      inputMode="email"
+                      autoComplete="email"
                     />
                   </div>
-                  <div>
-                    <label>Company Name *</label>
-                    <input
-                      name="company"
-                      placeholder="Company"
-                      value={form.company}
+
+                  <div style={{ marginTop: 12 }}>
+                    <label>Message *</label>
+                    <textarea
+                      name="message"
+                      placeholder="What do you monitor? (assets, routes, limits, alerts needed...)"
+                      value={form.message}
                       onChange={onChange}
                       required
                     />
                   </div>
-                </div>
 
-                <div style={{ marginTop: 12 }}>
-                  <label>Work Email *</label>
-                  <input
-                    name="email"
-                    placeholder="name@company.com"
-                    value={form.email}
-                    onChange={onChange}
-                    required
-                    inputMode="email"
-                    autoComplete="email"
-                  />
-                </div>
+                  {errorMsg ? <div className="err">{errorMsg}</div> : null}
 
-                <div style={{ marginTop: 12 }}>
-                  <label>Message *</label>
-                  <textarea
-                    name="message"
-                    placeholder="What do you monitor? (assets, routes, limits, alerts needed...)"
-                    value={form.message}
-                    onChange={onChange}
-                    required
-                  />
-                </div>
-
-                {errorMsg ? <div className="err">{errorMsg}</div> : null}
-
-                <div className="actions">
-                  <button type="button" className="btn btn-ghost" onClick={closePopup} disabled={submitting}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={submitting}>
-                    {submitting ? "Sending..." : "Submit request"}
-                  </button>
-                </div>
-              </form>
-            )}
+                  <div className="actions">
+                    <button type="button" className="btn" onClick={closePopup} disabled={submitting}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btnPrimary" disabled={submitting}>
+                      {submitting ? "Sending..." : "Submit request"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </div>
