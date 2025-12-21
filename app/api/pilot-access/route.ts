@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 
+export const runtime = "nodejs"
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST,OPTIONS",
@@ -11,71 +13,86 @@ export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders })
 }
 
+type PilotBody = {
+  name?: string
+  company?: string
+  email?: string
+  message?: string
+  website?: string // honeypot
+}
+
+function isValidEmail(email: string) {
+  return /^\S+@\S+\.\S+$/.test(email)
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}))
+    const body = (await req.json()) as PilotBody
 
-    // Honeypot anti-bot
-    if (body?.website && String(body.website).trim().length > 0) {
+    // honeypot anti-spam (si rempli => on "fait semblant" que c'est OK)
+    if (body.website && String(body.website).trim().length > 0) {
       return NextResponse.json({ ok: true }, { status: 200, headers: corsHeaders })
     }
 
-    const name = String(body?.name ?? "").trim()
-    const company = String(body?.company ?? "").trim()
-    const email = String(body?.email ?? "").trim()
-    const message = String(body?.message ?? "").trim()
+    const name = String(body.name || "").trim()
+    const company = String(body.company || "").trim()
+    const email = String(body.email || "").trim()
+    const message = String(body.message || "").trim()
 
-    if (!company || !email || !message) {
-      return NextResponse.json(
-        { error: "Missing fields: company, email, message" },
-        { status: 400, headers: corsHeaders }
-      )
+    if (!company) {
+      return NextResponse.json({ error: "Company name is required." }, { status: 400, headers: corsHeaders })
+    }
+    if (!email) {
+      return NextResponse.json({ error: "Work email is required." }, { status: 400, headers: corsHeaders })
+    }
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: "Please enter a valid email." }, { status: 400, headers: corsHeaders })
+    }
+    if (!message) {
+      return NextResponse.json({ error: "Message is required." }, { status: 400, headers: corsHeaders })
     }
 
     const apiKey = process.env.RESEND_API_KEY
-    const to = process.env.PILOT_TO_EMAIL
-    const from = process.env.PILOT_FROM_EMAIL || "Enthalpy <no-reply@enthalpy.site>"
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Server misconfig: RESEND_API_KEY missing" },
-        { status: 500, headers: corsHeaders }
-      )
-    }
-    if (!to) {
-      return NextResponse.json(
-        { error: "Server misconfig: PILOT_TO_EMAIL missing" },
-        { status: 500, headers: corsHeaders }
-      )
-    }
+    if (!apiKey) throw new Error("Missing RESEND_API_KEY in env")
 
     const resend = new Resend(apiKey)
 
-    // Email vers toi (admin)
+    const toInternal = process.env.PILOT_TO_EMAIL || "contact@enthalpy.site"
+    // IMPORTANT: mets ici un sender vérifié dans Resend (ou laisse celui-ci pour tester)
+    const from = process.env.PILOT_FROM_EMAIL || "Enthalpy <onboarding@resend.dev>"
+
+    const subject = `Pilot access request — ${company}`
+    const text = `New pilot access request
+
+Name: ${name || "-"}
+Company: ${company}
+Email: ${email}
+
+Message:
+${message}
+`
+
+    // email interne
     await resend.emails.send({
       from,
-      to,
+      to: [toInternal],
       replyTo: email,
-      subject: `Pilot access request — ${company}`,
-      text:
-        `Pilot access request\n\n` +
-        `Name: ${name || "-"}\n` +
-        `Company: ${company}\n` +
-        `Email: ${email}\n\n` +
-        `Message:\n${message}\n`,
+      subject,
+      text,
     })
 
-    // Confirmation au client (court + propre)
+    // email de confirmation (optionnel)
     try {
       await resend.emails.send({
         from,
-        to: email,
-        subject: "Enthalpy — request received",
-        text:
-          `Thanks${name ? " " + name : ""} — your pilot access request is received.\n` +
-          `We’ll reply shortly.\n\n` +
-          `— Enthalpy\n` +
-          `contact@enthalpy.site`,
+        to: [email],
+        subject: "Enthalpy — Pilot access request received",
+        text: `Thanks! We received your request.
+
+Company: ${company}
+Message: ${message}
+
+We’ll get back to you shortly.`,
       })
     } catch (e) {
       console.warn("CONFIRMATION_EMAIL_FAILED", e)

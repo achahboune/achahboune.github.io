@@ -5,9 +5,6 @@ import React, { useEffect, useMemo, useState } from "react"
 
 type Metric = "temp" | "humidity" | "vibration" | "co2"
 
-const BG_IMAGE = "/assets/bg-ocean-satellite-1920x1080.jpg" // ou "/assets/bg-ocean.jpg"
-const LOGO_IMAGE = "/assets/logo-transparent.png" // ou remplace ton logo.png par ce fichier
-
 const SERIES: Record<
   Metric,
   { label: string; unit: string; data: number[]; alert: string; yMin?: number; yMax?: number }
@@ -46,6 +43,25 @@ const SERIES: Record<
   },
 }
 
+const STATUS: Record<Metric, "ok" | "warn" | "risk"> = {
+  temp: "risk",
+  humidity: "warn",
+  vibration: "warn",
+  co2: "ok",
+}
+
+const STATUS_LABEL: Record<"ok" | "warn" | "risk", string> = {
+  ok: "Normal range",
+  warn: "Drift detected",
+  risk: "Excursion detected",
+}
+
+const STATUS_STROKE: Record<"ok" | "warn" | "risk", string> = {
+  ok: "rgba(34,197,94,0.95)",
+  warn: "rgba(245,158,11,0.95)",
+  risk: "rgba(239,68,68,0.95)",
+}
+
 function clamp(n: number, a: number, b: number) {
   return Math.max(a, Math.min(b, n))
 }
@@ -66,19 +82,18 @@ export default function Page() {
 
   // DASHBOARD
   const [metric, setMetric] = useState<Metric>("temp")
+  const status = STATUS[metric]
 
   function openPopup() {
     setPopupOpen(true)
     setSubmitted(false)
     setErrorMsg("")
     setForm({ name: "", company: "", email: "", message: "", website: "" })
-    document.documentElement.style.overflow = "hidden"
   }
 
   function closePopup() {
     setPopupOpen(false)
     setErrorMsg("")
-    document.documentElement.style.overflow = ""
   }
 
   function onChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -134,25 +149,27 @@ export default function Page() {
   // ESC close
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") closePopup()
+      if (e.key === "Escape") setPopupOpen(false)
     }
     if (popupOpen) window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [popupOpen])
 
   const chart = useMemo(() => {
     const s = SERIES[metric]
-    // ✅ plus grand, plus “site du monde”
-    const W = 760
-    const H = 360
-    const padX = 22
-    const padY = 18
+    const W = 620
+    const H = 300
+    const padX = 18
+    const padY = 16
 
     const min =
-      typeof s.yMin === "number" ? s.yMin : Math.min(...s.data) - (Math.max(...s.data) - Math.min(...s.data)) * 0.08
+      typeof s.yMin === "number"
+        ? s.yMin
+        : Math.min(...s.data) - (Math.max(...s.data) - Math.min(...s.data)) * 0.08
     const max =
-      typeof s.yMax === "number" ? s.yMax : Math.max(...s.data) + (Math.max(...s.data) - Math.min(...s.data)) * 0.08
+      typeof s.yMax === "number"
+        ? s.yMax
+        : Math.max(...s.data) + (Math.max(...s.data) - Math.min(...s.data)) * 0.08
 
     const points = s.data
       .map((v, i) => {
@@ -171,19 +188,16 @@ export default function Page() {
       <style jsx global>{`
         :root {
           --blue: #1b73ff;
-          --blue2: #00c8ff;
-          --dark: #071628;
-          --muted: rgba(7, 22, 40, 0.72);
+          --dark: #061325;
+          --muted: rgba(6, 19, 37, 0.74);
 
-          --glass: rgba(255, 255, 255, 0.55);
-          --glassStrong: rgba(255, 255, 255, 0.7);
-          --stroke: rgba(255, 255, 255, 0.22);
-
-          --shadow: 0 28px 90px rgba(0, 0, 0, 0.28);
-          --shadow2: 0 18px 55px rgba(0, 0, 0, 0.18);
+          --glass: rgba(255, 255, 255, 0.40);
+          --glassStrong: rgba(255, 255, 255, 0.58);
+          --stroke: rgba(255, 255, 255, 0.20);
 
           --ok: #22c55e;
           --warn: #f59e0b;
+          --risk: #ef4444;
         }
 
         * {
@@ -193,7 +207,6 @@ export default function Page() {
         html,
         body {
           height: 100%;
-          width: 100%;
         }
 
         body {
@@ -202,173 +215,172 @@ export default function Page() {
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           color: var(--dark);
-          overflow-x: hidden; /* ✅ pas de bouge/scroll horizontal */
-          background: #081425;
+          overflow-x: hidden;
+
+          /* background */
+          background: url("/assets/bg-ocean.jpg") center / cover no-repeat fixed;
+          position: relative;
         }
 
-        /* ✅ Background FIXE sans “background-attachment:fixed” (meilleur mobile) */
-        .bg {
+        /* voile global léger (pour lisibilité, mais on voit bien l’arrière-plan) */
+        body::before {
+          content: "";
           position: fixed;
           inset: 0;
-          z-index: 0;
-          background: url("${BG_IMAGE}") center / cover no-repeat;
-          transform: translateZ(0);
-        }
-        .bg::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(900px 520px at 18% 12%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08)),
-            radial-gradient(1100px 700px at 85% 18%, rgba(27, 115, 255, 0.18), rgba(27, 115, 255, 0.03)),
-            linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.25));
+          background: radial-gradient(900px 520px at 18% 12%, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.08)),
+            radial-gradient(1000px 650px at 82% 16%, rgba(27, 115, 255, 0.12), rgba(27, 115, 255, 0.02)),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.10));
           pointer-events: none;
+          z-index: 0;
+        }
+
+        /* ✅ Satellite BIEN VISIBLE à gauche */
+        body::after {
+          content: "";
+          position: fixed;
+          inset: 0;
+          background: url("/assets/satellite.png") left 6% top 12% / 520px auto no-repeat;
+          opacity: 0.96;
+          filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.22));
+          pointer-events: none;
+          z-index: 0;
         }
 
         .wrap {
           position: relative;
           z-index: 1;
-          min-height: 100vh;
+          min-height: 100svh;
           display: flex;
           flex-direction: column;
         }
 
         .container {
-          width: min(1560px, calc(100% - 40px));
+          width: min(1240px, calc(100% - 40px));
           margin: 0 auto;
         }
 
-        /* ✅ HEADER plus visible */
         header {
           position: sticky;
           top: 0;
-          z-index: 50;
+          z-index: 20;
           padding: 14px 0;
-          background: rgba(255, 255, 255, 0.18);
-          backdrop-filter: blur(14px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.14);
         }
 
         nav {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
+          gap: 16px;
         }
 
-        /* ✅ zone brand plus lisible (comme sur ton image) */
-        .brandPill {
-          display: flex;
+        /* ✅ logo fond plus clean (minimal) */
+        .brand {
+          display: inline-flex;
           align-items: center;
-          gap: 12px;
-          padding: 10px 12px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.22);
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          backdrop-filter: blur(12px);
+          gap: 10px;
+          padding: 8px 10px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.10);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          backdrop-filter: blur(10px);
         }
 
-        .brandLogo {
-          width: 46px;
-          height: 46px;
+        .brand img {
+          width: 36px;
+          height: 36px;
           object-fit: contain;
-          filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.25));
         }
 
-        .brandText strong {
+        .brand strong {
           display: block;
-          font-weight: 800;
-          font-size: 16px;
-          line-height: 1.05;
-          color: rgba(7, 22, 40, 0.92);
+          font-weight: 560;
+          font-size: 14px;
+          line-height: 1.1;
         }
 
-        .brandText span {
+        .brand span {
           display: block;
-          font-size: 11px;
+          font-size: 10px;
           letter-spacing: 0.18em;
-          color: rgba(7, 22, 40, 0.62);
-          font-weight: 750;
+          color: rgba(6, 19, 37, 0.56);
+          font-weight: 520;
           margin-top: 3px;
           white-space: nowrap;
         }
 
         .btn {
-          padding: 12px 18px;
+          padding: 11px 16px;
           border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.34);
-          background: rgba(255, 255, 255, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.30);
+          background: rgba(255, 255, 255, 0.10);
           color: #061325;
-          font-weight: 750;
+          font-weight: 560;
           cursor: pointer;
           backdrop-filter: blur(12px);
-          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
         }
 
         .btnPrimary {
           border: none;
-          background: linear-gradient(135deg, var(--blue), var(--blue2));
+          background: linear-gradient(135deg, #1b73ff, #00c8ff);
           color: #fff;
-          box-shadow: 0 18px 48px rgba(27, 115, 255, 0.35);
+          box-shadow: 0 14px 30px rgba(27, 115, 255, 0.26);
         }
 
-        /* MAIN */
         main {
           flex: 1;
-          padding: 28px 0 40px;
+          display: flex;
+          align-items: center;
         }
 
-        /* ✅ GROS “PANEL” central (comme un vrai site) */
-        .shell {
-          background: var(--glass);
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          border-radius: 28px;
-          backdrop-filter: blur(16px);
-          box-shadow: var(--shadow);
-          padding: 26px;
+        .stage {
+          width: 100%;
+          padding: 22px 0 28px;
         }
 
-        .heroGrid {
+        .layout {
           display: grid;
-          grid-template-columns: 1.25fr 0.95fr;
-          gap: 22px;
+          grid-template-columns: 1.12fr 0.88fr;
+          gap: 18px;
           align-items: stretch;
         }
 
-        .card {
-          background: rgba(255, 255, 255, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.24);
-          border-radius: 22px;
+        .glass {
+          background: var(--glass);
+          border: 1px solid rgba(255, 255, 255, 0.20);
+          border-radius: 18px;
           backdrop-filter: blur(14px);
-          box-shadow: var(--shadow2);
         }
 
-        /* HERO */
         .heroCard {
           position: relative;
           overflow: hidden;
-          padding: 28px 28px 22px;
-          min-height: 520px; /* ✅ grand */
+          padding: 20px;
         }
 
+        /* ✅ terminal/pc derrière plus visible */
         .heroCard::before {
           content: "";
           position: absolute;
           inset: 0;
           background: url("/assets/hero-iot-proof.png") right center / cover no-repeat;
-          opacity: 0.42;
+          opacity: 0.62;
           filter: saturate(1.05) contrast(1.05);
           pointer-events: none;
         }
 
+        /* ✅ voile beaucoup plus fin (on voit ce qui est derrière) */
         .heroCard::after {
           content: "";
           position: absolute;
           inset: 0;
           background: linear-gradient(
             90deg,
-            rgba(255, 255, 255, 0.88) 0%,
-            rgba(255, 255, 255, 0.62) 55%,
-            rgba(255, 255, 255, 0.16) 100%
+            rgba(255, 255, 255, 0.46) 0%,
+            rgba(255, 255, 255, 0.24) 56%,
+            rgba(255, 255, 255, 0.10) 100%
           );
           pointer-events: none;
         }
@@ -376,32 +388,42 @@ export default function Page() {
         .heroInner {
           position: relative;
           z-index: 2;
-          max-width: 860px;
+          max-width: 760px;
         }
 
+        /* ✅ typo fine / minimal */
         h1 {
           margin: 0;
-          letter-spacing: -0.03em;
-          line-height: 1.04;
-          font-size: clamp(40px, 3.4vw, 64px); /* ✅ big & premium */
-          font-weight: 900;
+          letter-spacing: -0.02em;
+          line-height: 1.06;
+          font-size: clamp(30px, 3.1vw, 48px);
+          font-weight: 560;
         }
 
         .accent {
           color: var(--blue);
+          font-weight: 560;
         }
 
+        /* ✅ un peu plus visible (mais pas gras comme du bold) */
         .lead {
-          margin-top: 14px;
-          font-size: 15px;
-          line-height: 1.7;
-          color: rgba(7, 22, 40, 0.8);
+          margin-top: 12px;
+          font-size: 20px;
+          line-height: 1.65;
+          color: rgba(6, 19, 37, 0.88);
+          font-weight: 580;
+          max-width: 720px;
+          text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55), 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        /* pas de bold agressif */
+        b,
+        strong {
           font-weight: 560;
-          max-width: 760px;
         }
 
         .chips {
-          margin-top: 16px;
+          margin-top: 14px;
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
@@ -411,13 +433,13 @@ export default function Page() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 9px 11px;
+          padding: 8px 10px;
           border-radius: 999px;
-          background: rgba(255, 255, 255, 0.78);
-          border: 1px solid rgba(255, 255, 255, 0.34);
+          background: rgba(255, 255, 255, 0.48);
+          border: 1px solid rgba(255, 255, 255, 0.24);
           font-size: 12px;
-          font-weight: 800;
-          color: rgba(7, 22, 40, 0.84);
+          font-weight: 520;
+          color: rgba(6, 19, 37, 0.78);
           backdrop-filter: blur(10px);
         }
 
@@ -426,24 +448,28 @@ export default function Page() {
           height: 9px;
           border-radius: 99px;
           background: var(--blue);
-          box-shadow: 0 0 0 6px rgba(27, 115, 255, 0.16);
-        }
-        .dotOk {
-          background: var(--ok);
-          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.16);
-        }
-        .dotWarn {
-          background: var(--warn);
-          box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.16);
+          box-shadow: 0 0 0 5px rgba(27, 115, 255, 0.12);
         }
 
-        /* CHART */
+        .dot-ok {
+          background: var(--ok);
+          box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.12);
+        }
+        .dot-warn {
+          background: var(--warn);
+          box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.12);
+        }
+        .dot-risk {
+          background: var(--risk);
+          box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12);
+        }
+
         .chartCard {
-          padding: 18px 18px 16px;
+          padding: 16px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          min-height: 520px; /* ✅ grand */
+          gap: 10px;
+          background: rgba(255, 255, 255, 0.42);
         }
 
         .topRow {
@@ -454,21 +480,22 @@ export default function Page() {
         }
 
         .cardTitle {
-          font-weight: 900;
+          font-weight: 560;
           font-size: 13px;
-          color: rgba(7, 22, 40, 0.9);
+          color: rgba(6, 19, 37, 0.78);
         }
 
         .live {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 7px 11px;
+          padding: 6px 10px;
           border-radius: 999px;
-          background: rgba(34, 197, 94, 0.16);
-          border: 1px solid rgba(34, 197, 94, 0.2);
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.18);
           font-size: 12px;
-          font-weight: 850;
+          font-weight: 520;
+          color: rgba(6, 19, 37, 0.70);
         }
 
         .liveDot {
@@ -476,7 +503,7 @@ export default function Page() {
           height: 8px;
           border-radius: 99px;
           background: var(--ok);
-          box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.14);
+          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
         }
 
         .tabs {
@@ -487,62 +514,73 @@ export default function Page() {
 
         .tab {
           border-radius: 999px;
-          padding: 10px 10px;
+          padding: 9px 10px;
           font-size: 12px;
-          font-weight: 850;
-          border: 1px solid rgba(255, 255, 255, 0.26);
-          background: rgba(255, 255, 255, 0.35);
+          font-weight: 520;
+          border: 1px solid rgba(255, 255, 255, 0.20);
+          background: rgba(255, 255, 255, 0.18);
           cursor: pointer;
-          color: rgba(7, 22, 40, 0.9);
+          color: rgba(6, 19, 37, 0.78);
           backdrop-filter: blur(10px);
         }
 
         .tabActive {
-          background: rgba(27, 115, 255, 0.2);
-          border-color: rgba(27, 115, 255, 0.28);
+          background: rgba(27, 115, 255, 0.14);
+          border-color: rgba(27, 115, 255, 0.20);
+          color: rgba(6, 19, 37, 0.86);
         }
 
         .chartWrap {
-          background: rgba(255, 255, 255, 0.78);
-          border: 1px solid rgba(255, 255, 255, 0.26);
+          background: rgba(255, 255, 255, 0.60);
+          border: 1px solid rgba(255, 255, 255, 0.20);
           border-radius: 16px;
-          padding: 12px 12px 10px;
+          padding: 10px 10px 8px;
           overflow: hidden;
           backdrop-filter: blur(10px);
         }
 
         .axisLabel {
           font-size: 11px;
-          fill: rgba(7, 22, 40, 0.58);
-          font-weight: 850;
+          fill: rgba(6, 19, 37, 0.52);
+          font-weight: 520;
         }
 
+        /* ✅ alert couleurs vert/orange/rouge */
         .alert {
           font-size: 12px;
-          font-weight: 900;
-          color: rgba(122, 77, 0, 0.95);
-          background: rgba(245, 158, 11, 0.18);
-          border: 1px solid rgba(245, 158, 11, 0.22);
-          padding: 11px 12px;
+          font-weight: 520;
+          padding: 10px 12px;
           border-radius: 14px;
         }
-
-        /* ✅ BAS plus vif / plus visible */
-        .below {
-          margin-top: 18px;
-          padding: 18px;
-          border-radius: 22px;
-          background: rgba(255, 255, 255, 0.42);
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          backdrop-filter: blur(14px);
+        .alert-ok {
+          color: rgba(17, 94, 45, 0.95);
+          background: rgba(34, 197, 94, 0.14);
+          border: 1px solid rgba(34, 197, 94, 0.22);
+        }
+        .alert-warn {
+          color: rgba(122, 77, 0, 0.95);
+          background: rgba(245, 158, 11, 0.16);
+          border: 1px solid rgba(245, 158, 11, 0.22);
+        }
+        .alert-risk {
+          color: rgba(127, 29, 29, 0.95);
+          background: rgba(239, 68, 68, 0.14);
+          border: 1px solid rgba(239, 68, 68, 0.22);
         }
 
-        .sectionTitle {
+        /* ✅ bas plus lisible, plus bleu, moins “noir” */
+        .lower {
+          margin-top: 14px;
+          padding: 14px;
+          background: rgba(255, 255, 255, 0.40);
+        }
+
+        .lowerHead {
           text-align: center;
-          font-weight: 900;
-          letter-spacing: -0.02em;
-          margin: 0 0 12px;
-          color: rgba(7, 22, 40, 0.92);
+          font-weight: 560;
+          font-size: 13px;
+          color: rgba(6, 19, 37, 0.72);
+          margin: 0 0 10px;
         }
 
         .features {
@@ -552,67 +590,94 @@ export default function Page() {
         }
 
         .feat {
-          padding: 14px 14px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.28);
-          box-shadow: var(--shadow2);
+          padding: 12px 12px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.62);
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          backdrop-filter: blur(10px);
         }
 
         .feat strong {
           display: block;
           font-size: 13px;
-          font-weight: 950;
-          margin-bottom: 5px;
+          font-weight: 560;
+          color: var(--blue);
+          margin-bottom: 4px;
         }
 
         .feat p {
           margin: 0;
-          font-size: 12px;
-          line-height: 1.35;
-          color: rgba(7, 22, 40, 0.78);
-          font-weight: 650;
+          font-size: 13px;
+          line-height: 1.38;
+          color: rgba(6, 19, 37, 0.72);
+          font-weight: 460;
+        }
+
+        .industriesTitle {
+          margin: 12px 0 10px;
+          text-align: center;
+          font-weight: 560;
+          color: rgba(6, 19, 37, 0.72);
+          font-size: 13px;
         }
 
         .industries {
-          margin-top: 14px;
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 12px;
         }
 
-        .ind {
-          padding: 14px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.28);
-          box-shadow: var(--shadow2);
-        }
-        .ind strong {
-          display: block;
-          font-size: 13px;
-          font-weight: 950;
-          margin-bottom: 4px;
-        }
-        .ind span {
-          display: block;
-          font-size: 12px;
-          font-weight: 650;
-          color: rgba(7, 22, 40, 0.75);
+        .industry {
+          padding: 12px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.62);
+          border: 1px solid rgba(255, 255, 255, 0.24);
         }
 
+        .industry h4 {
+          margin: 0 0 6px;
+          font-size: 13px;
+          font-weight: 560;
+          color: var(--blue);
+        }
+
+        .industry p {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 460;
+          color: rgba(6, 19, 37, 0.72);
+          line-height: 1.35;
+        }
+
+        /* ✅ footer bien visible */
         .footer {
           margin-top: 12px;
-          text-align: center;
-          font-weight: 900;
-          color: rgba(255, 255, 255, 0.95);
-          text-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+          display: flex;
+          justify-content: center;
         }
-        .footer small {
-          display: block;
-          margin-top: 6px;
-          font-weight: 850;
-          color: rgba(255, 255, 255, 0.88);
+
+        .footerPill {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          padding: 10px 14px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.70);
+          border: 1px solid rgba(255, 255, 255, 0.30);
+          color: rgba(6, 19, 37, 0.90);
+          font-weight: 520;
+          backdrop-filter: blur(10px);
+        }
+
+        .footerPill strong {
+          font-weight: 560;
+          color: var(--blue);
+        }
+
+        .footerPill small {
+          font-weight: 460;
+          color: rgba(6, 19, 37, 0.72);
         }
 
         /* POPUP */
@@ -624,20 +689,20 @@ export default function Page() {
           z-index: 9999;
           align-items: center;
           justify-content: center;
-          padding: 16px;
+          padding: 18px;
         }
+
         .popup-overlay.active {
           display: flex;
         }
 
         .popup {
           background: rgba(255, 255, 255, 0.94);
-          width: min(720px, 94vw); /* ✅ pas de zoom auto */
-          max-height: 86vh; /* ✅ pas de “grandissement” */
-          overflow: auto;
+          width: 720px;
+          max-width: 100%;
           border-radius: 18px;
+          overflow: hidden;
           position: relative;
-          box-shadow: 0 30px 90px rgba(0, 0, 0, 0.28);
           border: 1px solid rgba(255, 255, 255, 0.35);
           backdrop-filter: blur(12px);
         }
@@ -645,20 +710,20 @@ export default function Page() {
         .popupHead {
           padding: 18px 18px 10px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-          background: linear-gradient(180deg, rgba(27, 115, 255, 0.12), rgba(255, 255, 255, 0.94));
+          background: linear-gradient(180deg, rgba(27, 115, 255, 0.10), rgba(255, 255, 255, 0.94));
         }
 
         .popupTitle {
           margin: 0;
-          font-weight: 950;
+          font-weight: 600;
           letter-spacing: -0.02em;
           font-size: 18px;
         }
 
         .popupSub {
           margin: 6px 0 0;
-          color: rgba(7, 22, 40, 0.78);
-          font-weight: 650;
+          color: rgba(6, 19, 37, 0.72);
+          font-weight: 460;
           font-size: 12px;
           line-height: 1.4;
         }
@@ -676,22 +741,21 @@ export default function Page() {
         label {
           display: block;
           font-size: 12px;
-          font-weight: 850;
-          color: rgba(7, 22, 40, 0.7);
+          font-weight: 520;
+          color: rgba(6, 19, 37, 0.70);
           margin: 0 0 6px;
         }
 
-        /* ✅ IMPORTANT: 16px minimum sinon iPhone zoom */
         input,
         textarea {
           width: 100%;
           border-radius: 12px;
           border: 1px solid rgba(0, 0, 0, 0.16);
           padding: 12px 12px;
-          font-size: 16px; /* ✅ anti-zoom iOS */
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 520;
           outline: none;
-          background: rgba(255, 255, 255, 0.95);
+          background: rgba(255, 255, 255, 0.92);
           color: #061325;
         }
 
@@ -702,7 +766,7 @@ export default function Page() {
         }
 
         textarea {
-          min-height: 120px;
+          min-height: 110px;
           resize: vertical;
         }
 
@@ -716,7 +780,7 @@ export default function Page() {
         .err {
           margin-top: 10px;
           color: #b91c1c;
-          font-weight: 900;
+          font-weight: 560;
           font-size: 12px;
         }
 
@@ -726,10 +790,10 @@ export default function Page() {
           align-items: flex-start;
           padding: 14px;
           border-radius: 14px;
-          background: rgba(34, 197, 94, 0.14);
-          border: 1px solid rgba(34, 197, 94, 0.22);
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.18);
           color: #061325;
-          font-weight: 800;
+          font-weight: 520;
           font-size: 13px;
           line-height: 1.45;
         }
@@ -740,9 +804,9 @@ export default function Page() {
           border-radius: 999px;
           display: grid;
           place-items: center;
-          background: rgba(34, 197, 94, 0.2);
-          border: 1px solid rgba(34, 197, 94, 0.3);
-          font-weight: 950;
+          background: rgba(34, 197, 94, 0.16);
+          border: 1px solid rgba(34, 197, 94, 0.24);
+          font-weight: 700;
           color: #15803d;
           flex: 0 0 auto;
           margin-top: 1px;
@@ -756,10 +820,9 @@ export default function Page() {
           height: 40px;
           border-radius: 999px;
           border: none;
-          background: rgba(255, 255, 255, 0.95);
+          background: rgba(255, 255, 255, 0.94);
           font-size: 22px;
           cursor: pointer;
-          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
         }
 
         .hp {
@@ -771,41 +834,51 @@ export default function Page() {
           overflow: hidden;
         }
 
-        /* ✅ RESPONSIVE */
-        @media (max-width: 980px) {
-          .heroGrid {
+        /* ✅ responsive mobile + pas de zoom iPhone */
+        @media (max-width: 1040px) {
+          body {
+            background-attachment: scroll;
+          }
+
+          main {
+            align-items: flex-start;
+          }
+
+          .layout {
             grid-template-columns: 1fr;
           }
-          .heroCard,
-          .chartCard {
-            min-height: auto;
-          }
+
           .features,
           .industries {
             grid-template-columns: 1fr;
           }
+
           .row {
             grid-template-columns: 1fr;
           }
-          h1 {
-            font-size: clamp(34px, 8vw, 48px);
+
+          input,
+          textarea {
+            font-size: 16px;
           }
-          .shell {
-            padding: 18px;
+
+          /* satellite plus petit mais toujours visible */
+          body::after {
+            background-position: left 5% top 8%;
+            background-size: 320px auto;
+            opacity: 0.98;
           }
         }
       `}</style>
 
-      <div className="bg" aria-hidden="true" />
-
       <div className="wrap">
-        {/* HEADER */}
         <header>
           <div className="container">
             <nav>
-              <div className="brandPill">
-                <img className="brandLogo" src={LOGO_IMAGE} alt="Enthalpy" />
-                <div className="brandText">
+              <div className="brand">
+                {/* 👉 idéal: mettre un logo transparent ici (ex: /assets/logo-transparent.png) */}
+                <img src="/assets/logo.png" alt="Enthalpy" />
+                <div>
                   <strong>Enthalpy</strong>
                   <span>COLD &amp; CRITICAL MONITORING</span>
                 </div>
@@ -818,13 +891,11 @@ export default function Page() {
           </div>
         </header>
 
-        {/* MAIN */}
         <main>
           <div className="container">
-            <div className="shell">
-              <div className="heroGrid">
-                {/* LEFT: HERO */}
-                <section className="card heroCard">
+            <div className="stage">
+              <div className="layout">
+                <section className="glass heroCard">
                   <div className="heroInner">
                     <h1>
                       Smart IoT sensors for critical goods.
@@ -833,32 +904,44 @@ export default function Page() {
                     </h1>
 
                     <div className="lead">
-                      Enthalpy monitors <b>temperature</b>, <b>humidity</b>, <b>vibration</b> and <b>CO₂</b> in real time across{" "}
-                      <b>warehouses</b>, <b>trucks</b> and <b>containers</b>.
+                      Enthalpy monitors temperature, humidity, vibration and CO₂ in real time across warehouses, trucks and
+                      containers.
                       <br />
-                      When an incident happens, the data is <b>timestamped</b> and sealed as <b>proof on blockchain</b> — and the same
-                      blockchain record can trigger <b>automatic payment</b> (partners, insurance, claims, SLA).
+                      When an incident happens, the data is timestamped and sealed as proof on blockchain — and the same
+                      blockchain record can trigger automatic payment (partners, insurance, claims, SLA).
                     </div>
 
                     <div className="chips">
                       <span className="chip">
-                        <span className="dot" />
-                        Temperature • Humidity • CO₂ • Vibration
+                        <span className={`dot dot-${STATUS.temp}`} />
+                        Temp
                       </span>
                       <span className="chip">
-                        <span className="dot dotOk" />
+                        <span className={`dot dot-${STATUS.humidity}`} />
+                        Humidity
+                      </span>
+                      <span className="chip">
+                        <span className={`dot dot-${STATUS.vibration}`} />
+                        Vibration
+                      </span>
+                      <span className="chip">
+                        <span className={`dot dot-${STATUS.co2}`} />
+                        CO₂
+                      </span>
+
+                      <span className="chip">
+                        <span className="dot dot-ok" />
                         Proof (blockchain-sealed)
                       </span>
                       <span className="chip">
-                        <span className="dot dotWarn" />
+                        <span className="dot dot-warn" />
                         Payment (blockchain-triggered)
                       </span>
                     </div>
                   </div>
                 </section>
 
-                {/* RIGHT: CHART */}
-                <section className="card chartCard" aria-label="Analytics">
+                <section className="glass chartCard" aria-label="Analytics">
                   <div className="topRow">
                     <div className="cardTitle">Analytics</div>
                     <div className="live">
@@ -891,37 +974,39 @@ export default function Page() {
                             y1={y}
                             x2={chart.W - chart.padX}
                             y2={y}
-                            stroke="rgba(7, 22, 40, 0.10)"
+                            stroke="rgba(6, 19, 37, 0.10)"
                             strokeWidth="1"
                           />
                         )
                       })}
 
-                      <text x={chart.padX} y={15} className="axisLabel">
+                      <text x={chart.padX} y={14} className="axisLabel">
                         {chart.max.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
                       </text>
-                      <text x={chart.padX} y={chart.H - 5} className="axisLabel">
+                      <text x={chart.padX} y={chart.H - 4} className="axisLabel">
                         {chart.min.toFixed(metric === "vibration" ? 2 : 0)} {chart.s.unit}
                       </text>
 
+                      {/* ✅ couleur selon statut */}
                       <polyline
                         points={chart.points}
                         fill="none"
-                        stroke="rgba(27,115,255,0.95)"
-                        strokeWidth="4"
+                        stroke={STATUS_STROKE[status]}
+                        strokeWidth="3.2"
                         strokeLinejoin="round"
                         strokeLinecap="round"
                       />
                     </svg>
                   </div>
 
-                  <div className="alert">{chart.s.alert}</div>
+                  <div className={`alert alert-${status}`}>
+                    {chart.s.alert} — {STATUS_LABEL[status]}
+                  </div>
                 </section>
               </div>
 
-              {/* BELOW (plus visible) */}
-              <div className="below">
-                <h3 className="sectionTitle">From sensors to proof</h3>
+              <section className="glass lower">
+                <p className="lowerHead">From sensors to proof</p>
 
                 <div className="features">
                   <div className="feat">
@@ -938,30 +1023,30 @@ export default function Page() {
                   </div>
                 </div>
 
-                <h3 className="sectionTitle" style={{ marginTop: 14 }}>
-                  Industries where a few degrees cost millions
-                </h3>
+                <div className="industriesTitle">Industries where a few degrees cost millions</div>
 
                 <div className="industries">
-                  <div className="ind">
-                    <strong>Pharma &amp; Biotech</strong>
-                    <span>Audit-ready traceability &amp; compliance proof.</span>
+                  <div className="industry">
+                    <h4>Pharma &amp; Biotech</h4>
+                    <p>Audit-ready traceability &amp; compliance proof.</p>
                   </div>
-                  <div className="ind">
-                    <strong>Food &amp; Frozen</strong>
-                    <span>Prevent cold-chain failures &amp; claims.</span>
+                  <div className="industry">
+                    <h4>Food &amp; Frozen</h4>
+                    <p>Prevent cold-chain failures &amp; claims.</p>
                   </div>
-                  <div className="ind">
-                    <strong>Logistics &amp; 3PL</strong>
-                    <span>SLA evidence + partner payments automation.</span>
+                  <div className="industry">
+                    <h4>Logistics &amp; 3PL</h4>
+                    <p>SLA evidence + partner payments automation.</p>
                   </div>
                 </div>
 
                 <div className="footer">
-                  contact@enthalpy.site
-                  <small>Tangier, Morocco</small>
+                  <div className="footerPill">
+                    <strong>contact@enthalpy.site</strong>
+                    <small>Tangier, Morocco</small>
+                  </div>
                 </div>
-              </div>
+              </section>
             </div>
           </div>
         </main>
@@ -988,13 +1073,12 @@ export default function Page() {
                 <div className="successBox">
                   <div className="successIcon">✓</div>
                   <div>
-                    ✅ Request received. A confirmation email has been sent. If you don’t see it, please check Spam or contact{" "}
+                    Request received. A confirmation email has been sent. If you don’t see it, please check Spam or contact{" "}
                     <b>contact@enthalpy.site</b>.
                   </div>
                 </div>
               ) : (
                 <form onSubmit={submitForm}>
-                  {/* Honeypot */}
                   <div className="hp">
                     <label>
                       Website
