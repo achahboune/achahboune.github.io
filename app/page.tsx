@@ -221,7 +221,7 @@ export default function Page() {
           overflow-x: hidden;
 
           /* ✅ versionné (force refresh) */
-          background: url("/assets/bg-ocean.jpg?v=${ASSET_VERSION}") center / cover no-repeat fixed;
+          background: url("/assets/bg-ocean.jpg?v=20251221") center / cover no-repeat fixed;
           position: relative;
         }
 
@@ -240,7 +240,7 @@ export default function Page() {
           content: "";
           position: fixed;
           inset: 0;
-          background: url("/assets/satellite.png?v=${ASSET_VERSION}") left 6% top 12% / 520px auto no-repeat;
+          background: url("/assets/hero-iot-proof.png?v=20251221") right center / cover no-repeat;
           opacity: 0.96;
           filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.22));
           pointer-events: none;
@@ -821,42 +821,37 @@ export default function Page() {
 
         /* ✅ Responsive : même look, juste empilé */
         @media (max-width: 1040px) {
-          main {
-            align-items: flex-start;
-          }
+  header {
+    background: rgba(255, 255, 255, 0.05);
+  }
 
-          .layout {
-            grid-template-columns: 1fr;
-          }
+  .brand {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
 
-          .features,
-          .industries {
-            grid-template-columns: 1fr;
-          }
+  .lead {
+    background: rgba(255, 255, 255, 0.10);   /* plus transparent */
+    border-color: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+  }
 
-          .row {
-            grid-template-columns: 1fr;
-          }
-
-          input,
-          textarea {
-            font-size: 16px;
-          }
-
-          body::after {
-            background-position: left 4% top 10%;
-            background-size: 380px auto;
-            opacity: 0.96;
-          }
-        }
-      `}</style>
+  .lead::before {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.14),
+      rgba(255, 255, 255, 0.03)
+    );
+  }
+}
 
       <div className="wrap">
         <header>
           <div className="container">
             <nav>
               <div className="brand">
-                <img src={`/assets/logo.png?v=${ASSET_VERSION}`} alt="Enthalpy" />
+                <img src="/assets/logo.png?v=20251221" alt="Enthalpy" />
                 <div>
                   <strong>Enthalpy</strong>
                   <span>COLD &amp; CRITICAL MONITORING</span>
