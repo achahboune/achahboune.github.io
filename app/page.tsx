@@ -264,20 +264,16 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Right Visual (Satellite) */}
-            <div className="relative h-[400px] lg:h-[600px] flex items-center justify-center">
-              {/* Satellite Image Floating */}
-              <div className="animate-float relative z-10 w-full max-w-[500px]">
+            {/* Right Visual (UPDATED HERO VISUALIZATION) */}
+            <div className="relative h-[400px] lg:h-[600px] flex items-center justify-center w-full">
+              {/* Hero SVG Visualization */}
+              <div className="relative z-10 w-full max-w-[800px]">
                  <img 
-                   src="/assets/satellite.png" 
-                   alt="Satellite" 
-                   className="w-full h-auto drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transform rotate-[-15deg] hover:rotate-0 transition-transform duration-700 ease-out"
+                   src="/assets/hero-visualization.svg" 
+                   alt="Cold Chain Intelligence secured by space" 
+                   className="w-full h-auto drop-shadow-[0_0_80px_rgba(59,130,246,0.4)]"
                  />
               </div>
-              
-              {/* Decorative Orbits */}
-              <div className="absolute inset-0 border border-white/5 rounded-full scale-[1.2]" />
-              <div className="absolute inset-0 border border-white/5 rounded-full scale-[1.5] border-dashed opacity-50" />
             </div>
 
           </div>

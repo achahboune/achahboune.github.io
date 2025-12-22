@@ -1,0 +1,99 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="spaceGrad" x1="400" y1="0" x2="400" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#020617" stop-opacity="0" />
+      <stop offset="1" stop-color="#1e3a8a" stop-opacity="0.2" />
+    </linearGradient>
+    <radialGradient id="earthGrad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(400 550) rotate(-90) scale(400)">
+      <stop offset="0" stop-color="#3b82f6" stop-opacity="0.8" />
+      <stop offset="0.6" stop-color="#172554" stop-opacity="0.9" />
+      <stop offset="1" stop-color="#020617" />
+    </radialGradient>
+    <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.8" />
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Earth Arc -->
+  <path d="M100,550 Q400,350 700,550 L800,600 L0,600 Z" fill="url(#earthGrad)" />
+  <path d="M100,550 Q400,350 700,550" stroke="#60a5fa" stroke-width="2" stroke-opacity="0.5" fill="none" />
+  
+  <!-- Map Grid on Earth (Stylized) -->
+  <g opacity="0.3" stroke="#93c5fd" stroke-width="1">
+     <path d="M200,500 L250,480 L350,510 L450,470 L550,500" fill="none"/>
+     <path d="M150,530 L220,510 L300,530" fill="none"/>
+     <path d="M500,520 L600,490 L650,530" fill="none"/>
+  </g>
+
+  <!-- Supply Chain Nodes -->
+  <circle cx="250" cy="480" r="4" fill="#fff">
+    <animate attributeName="r" values="4;6;4" dur="3s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="450" cy="470" r="4" fill="#fff">
+    <animate attributeName="r" values="4;6;4" dur="2.5s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="600" cy="490" r="4" fill="#fff">
+    <animate attributeName="r" values="4;6;4" dur="3.5s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="3.5s" repeatCount="indefinite" />
+  </circle>
+
+  <!-- Satellite (Detailed) -->
+  <g transform="translate(400, 150)">
+    <animateTransform attributeName="transform" type="translate" values="400,150; 400,170; 400,150" dur="6s" repeatCount="indefinite" />
+    
+    <!-- Solar Panels -->
+    <rect x="-120" y="-30" width="80" height="60" fill="#1e293b" stroke="#475569" rx="2" />
+    <path d="M-100,-30 V30 M-80,-30 V30 M-60,-30 V30" stroke="#334155" stroke-width="1"/>
+    
+    <rect x="40" y="-30" width="80" height="60" fill="#1e293b" stroke="#475569" rx="2" />
+    <path d="M60,-30 V30 M80,-30 V30 M100,-30 V30" stroke="#334155" stroke-width="1"/>
+
+    <!-- Connector -->
+    <rect x="-40" y="-10" width="80" height="20" fill="#64748b" />
+
+    <!-- Body -->
+    <rect x="-30" y="-30" width="60" height="60" rx="8" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2" filter="url(#glow)" />
+    <circle cx="0" cy="0" r="15" fill="#3b82f6" />
+    <circle cx="0" cy="0" r="8" fill="#fff" fill-opacity="0.8">
+       <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite" />
+    </circle>
+  </g>
+
+  <!-- Data Beams -->
+  <path d="M400,180 L250,480" stroke="url(#beamGrad)" stroke-width="2" stroke-dasharray="5,5" opacity="0.6">
+    <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+  </path>
+  <path d="M400,180 L450,470" stroke="url(#beamGrad)" stroke-width="2" stroke-dasharray="5,5" opacity="0.8">
+    <animate attributeName="stroke-dashoffset" from="100" to="0" dur="1.5s" repeatCount="indefinite" />
+  </path>
+  <path d="M400,180 L600,490" stroke="url(#beamGrad)" stroke-width="2" stroke-dasharray="5,5" opacity="0.6">
+    <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2.2s" repeatCount="indefinite" />
+  </path>
+
+  <!-- Holographic Interface Cards -->
+  <!-- Card 1: Temp -->
+  <g transform="translate(150, 200)">
+    <rect x="0" y="0" width="100" height="60" fill="#0f172a" stroke="#3b82f6" stroke-width="1" rx="4" opacity="0.8" />
+    <text x="10" y="20" fill="#60a5fa" font-family="sans-serif" font-size="10">TEMP -18°C</text>
+    <polyline points="10,40 30,35 50,45 70,30 90,40" fill="none" stroke="#22c55e" stroke-width="2" />
+    <line x1="90" y1="30" x2="250" y2="280" stroke="#3b82f6" stroke-width="1" opacity="0.3" stroke-dasharray="2,2" />
+  </g>
+
+  <!-- Card 2: Blockchain -->
+  <g transform="translate(550, 250)">
+    <rect x="0" y="0" width="100" height="60" fill="#0f172a" stroke="#3b82f6" stroke-width="1" rx="4" opacity="0.8" />
+    <text x="10" y="20" fill="#60a5fa" font-family="sans-serif" font-size="10">BLOCK #92A</text>
+    <text x="10" y="40" fill="#fff" font-family="sans-serif" font-size="10">VERIFIED</text>
+    <circle cx="80" cy="30" r="10" stroke="#22c55e" stroke-width="2" fill="none" />
+    <path d="M75,30 L78,33 L85,26" stroke="#22c55e" stroke-width="2" fill="none" />
+    <line x1="50" y1="60" x2="-50" y2="220" stroke="#3b82f6" stroke-width="1" opacity="0.3" stroke-dasharray="2,2" />
+  </g>
+</svg>
