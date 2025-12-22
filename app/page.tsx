@@ -15,12 +15,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
-  Box,
-  Globe,
-  Truck,
-  Leaf,
-  FlaskConical,
-  Utensils
+  Box
 } from "lucide-react"
 
 // --- TYPES & DATA ---
@@ -188,12 +183,14 @@ export default function Page() {
           </div>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
-            {/* 
-               SCROLL FIX: Points to #live-feed which is the ID of the dashboard section.
-               This ensures the user sees the Container Header immediately.
-            */}
-            <a href="#live-feed" className="hover:text-white transition-colors">Features</a>
+            <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#industries" className="hover:text-white transition-colors">Industries</a>
+            <button 
+              onClick={openPopup}
+              className="px-5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/10 transition-all"
+            >
+              Sign In
+            </button>
             <button 
               onClick={openPopup}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all hover:shadow-[0_0_30px_rgba(37,99,235,0.6)]"
@@ -212,7 +209,7 @@ export default function Page() {
       {isMenuOpen && (
         <div className="fixed inset-0 z-40 bg-[#020617] pt-24 px-6 md:hidden">
           <div className="flex flex-col gap-6 text-lg font-medium">
-            <a href="#live-feed" onClick={toggleMenu}>Features</a>
+            <a href="#features" onClick={toggleMenu}>Features</a>
             <a href="#industries" onClick={toggleMenu}>Industries</a>
             <button onClick={openPopup} className="text-blue-400">Request Pilot Access</button>
           </div>
@@ -228,7 +225,7 @@ export default function Page() {
         <div className="container mx-auto px-6 relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             
-            {/* Left Content (UPDATED TEXT) */}
+            {/* Left Content */}
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium mb-8">
                 <span className="relative flex h-2.5 w-2.5">
@@ -245,20 +242,10 @@ export default function Page() {
                 </span>
               </h1>
               
-              <div className="space-y-4 mb-10 text-lg text-slate-400 leading-relaxed">
-                 <p>
-                    <strong>Real-time IoT monitoring &amp; traceability:</strong> Track temperature, humidity, vibration, and CO₂ across the entire supply chain (warehouses, trucks, containers).
-                 </p>
-                 <p>
-                    <strong>Immediate alerts:</strong> Automatic detection of excursions/deviations with instant notifications to prevent loss.
-                 </p>
-                 <p>
-                    <strong>Blockchain-proof data:</strong> Timestamped, sealed, tamper-proof records ready for audits and disputes.
-                 </p>
-                 <p>
-                    <strong>Automated payments:</strong> Smart contracts trigger insurance claims and SLA penalties automatically based on sensor evidence.
-                 </p>
-              </div>
+              <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-lg">
+                Monitor temperature, vibration, and humidity in real-time. 
+                Automatically trigger insurance claims and SLA payments via smart contracts when critical limits are breached.
+              </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <button 
@@ -269,22 +256,22 @@ export default function Page() {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button 
-                  onClick={() => document.getElementById('live-feed')?.scrollIntoView({behavior: 'smooth'})}
+                  onClick={() => document.getElementById('demo')?.scrollIntoView({behavior: 'smooth'})}
                   className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-semibold transition-all"
                 >
-                  View Live Feed
+                  View Live Demo
                 </button>
               </div>
             </div>
 
-            {/* Right Visual (UPDATED SATELLITE SVG) */}
+            {/* Right Visual (Satellite) */}
             <div className="relative h-[400px] lg:h-[600px] flex items-center justify-center">
               {/* Satellite Image Floating */}
               <div className="animate-float relative z-10 w-full max-w-[500px]">
                  <img 
-                   src="/assets/satellite.svg" 
+                   src="/assets/satellite.png" 
                    alt="Satellite" 
-                   className="w-full h-auto drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transform hover:scale-105 transition-transform duration-700 ease-out"
+                   className="w-full h-auto drop-shadow-[0_0_50px_rgba(59,130,246,0.3)] transform rotate-[-15deg] hover:rotate-0 transition-transform duration-700 ease-out"
                  />
               </div>
               
@@ -297,9 +284,8 @@ export default function Page() {
         </div>
       </section>
 
-      {/* --- LIVE SENSOR FEED (SCROLL ANCHOR) --- */}
-      {/* Added scroll-mt-24 so the navbar doesn't cover the header */}
-      <section id="live-feed" className="py-20 relative scroll-mt-24">
+      {/* --- DASHBOARD DEMO SECTION --- */}
+      <section id="demo" className="py-20 relative">
         <div className="container mx-auto px-6">
           <div className="glass-panel rounded-3xl p-8 lg:p-12 relative overflow-hidden">
             
@@ -358,45 +344,42 @@ export default function Page() {
         </div>
       </section>
 
-      {/* --- INDUSTRIES (NEW SECTION) --- */}
-      <section id="industries" className="py-20 scroll-mt-24 border-t border-white/5 bg-white/[0.02]">
+      {/* --- FEATURES GRID --- */}
+      <section id="features" className="py-20">
         <div className="container mx-auto px-6">
-           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Industries</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">Where precision is not optional.</p>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Why critical industries choose Enthalpy</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">We bridge the gap between physical sensors and digital contracts.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Pharma */}
             <div className="glass-panel p-8 rounded-3xl group hover:bg-white/5 transition-colors">
               <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition-transform">
-                <FlaskConical className="w-7 h-7" />
+                <Box className="w-7 h-7" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Pharmaceuticals</h3>
+              <h3 className="text-xl font-bold text-white mb-3">Tamper-proof Hardware</h3>
               <p className="text-slate-400 leading-relaxed">
-                GDP compliance and audit-ready reports. Ensure vaccine and medication integrity with tamper-proof logs.
+                Our military-grade sensors travel with your cargo. 5-year battery life, global connectivity, and anti-tamper casing.
               </p>
             </div>
 
-            {/* Food */}
             <div className="glass-panel p-8 rounded-3xl group hover:bg-white/5 transition-colors">
-              <div className="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 mb-6 group-hover:scale-110 transition-transform">
-                <Utensils className="w-7 h-7" />
+              <div className="w-14 h-14 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform">
+                <ShieldCheck className="w-7 h-7" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Food &amp; Agriculture</h3>
+              <h3 className="text-xl font-bold text-white mb-3">Blockchain Evidence</h3>
               <p className="text-slate-400 leading-relaxed">
-                Prevent spoilage and reduce waste. Real-time alerts for reefer malfunctions and temperature abuse.
+                Every critical event is hashed and stored on-chain. Create indisputable proof for auditors and insurance partners.
               </p>
             </div>
 
-            {/* Bio */}
             <div className="glass-panel p-8 rounded-3xl group hover:bg-white/5 transition-colors">
               <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400 mb-6 group-hover:scale-110 transition-transform">
-                <Leaf className="w-7 h-7" />
+                <Zap className="w-7 h-7" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Biotech &amp; Life Sciences</h3>
+              <h3 className="text-xl font-bold text-white mb-3">Instant Settlement</h3>
               <p className="text-slate-400 leading-relaxed">
-                Strict environmental control for sensitive biological samples. End-to-end traceability for clinical trials.
+                Smart contracts automatically execute payments or penalties based on sensor data. No more paperwork.
               </p>
             </div>
           </div>
@@ -408,22 +391,13 @@ export default function Page() {
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
             <img src="/assets/logo.png" alt="Enthalpy" className="w-6 h-6 opacity-50" />
-            <span className="text-slate-500 font-semibold">Enthalpy Inc.</span>
+            <span className="text-slate-500 font-semibold">Enthalpy</span>
           </div>
-          
-          {/* Updated Footer Info */}
-          <div className="flex flex-col items-center md:items-end gap-2 text-sm">
-            <div className="flex items-center gap-2 text-slate-400">
-               <Globe className="w-4 h-4" /> 
-               Tangier - Morocco
-            </div>
-            <div className="flex items-center gap-2 text-slate-400">
-               <Mail className="w-4 h-4" /> 
-               contact@enthalpy.site
-            </div>
-            <div className="text-slate-600 mt-2">
-              &copy; 2025 Enthalpy. All rights reserved.
-            </div>
+          <div className="text-slate-600 text-sm">
+            &copy; 2025 Enthalpy. All rights reserved.
+          </div>
+          <div className="flex items-center gap-6">
+            <a href="#" className="text-slate-500 hover:text-white transition-colors"><Mail className="w-5 h-5"/></a>
           </div>
         </div>
       </footer>
