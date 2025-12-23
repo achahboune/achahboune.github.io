@@ -10,10 +10,17 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "Enthalpy",
-  description: "Cold & critical monitoring — audit-ready proof.",
+  description: "Cold chain intelligence, secured by space.",
+  icons: {
+    icon: "/favicon.png",
+  },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
       <body className={poppins.variable}>{children}</body>
