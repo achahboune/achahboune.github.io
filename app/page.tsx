@@ -13,6 +13,7 @@ import {
   Send,
   Mail,
   ArrowRight,
+  ArrowUp,
   ShieldCheck,
   Zap,
   Box,
@@ -84,6 +85,7 @@ export default function Page() {
   const [popupOpen, setPopupOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [showScrollUp, setShowScrollUp] = useState(false)
   
   // Form State
   const [form, setForm] = useState({ name: "", company: "", email: "", message: "", website: "" })
@@ -116,6 +118,22 @@ export default function Page() {
       setSubmitting(false)
     }
   }
+
+  // Scroll Up button visibility
+  useEffect(() => {
+    const onScroll = () => {
+      // show after a bit of scrolling, and avoid UI conflicts with overlays
+      const shouldShow = window.scrollY > 600
+      setShowScrollUp(shouldShow)
+    }
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" })
+
+  const canShowScrollUp = showScrollUp && !isMenuOpen && !popupOpen
 
   // --- RENDER HELPERS ---
 
@@ -462,6 +480,19 @@ export default function Page() {
           </div>
         </div>
       </footer>
+
+      {/* --- SCROLL UP --- */}
+      <button
+        type="button"
+        aria-label="Back to top"
+        title="Back to top"
+        onClick={scrollToTop}
+        className={`fixed bottom-6 right-6 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-xl text-slate-200 shadow-[0_0_24px_rgba(37,99,235,0.18)] transition-all duration-200 hover:bg-blue-600/80 hover:border-blue-400/40 hover:text-white hover:shadow-[0_0_34px_rgba(37,99,235,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 ${
+          canShowScrollUp ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+        }`}
+      >
+        <ArrowUp className="w-5 h-5" />
+      </button>
 
       {/* --- POPUP MODAL --- */}
       {popupOpen && (

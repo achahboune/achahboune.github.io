@@ -12,15 +12,15 @@ export async function POST(req: Request) {
 
   const resend = new Resend(process.env.RESEND_API_KEY)
 
-  const FROM = process.env.PILOT_FROM_EMAIL!              // noreply@enthalpy.site
-  const ADMIN_TO = process.env.PILOT_TO_EMAIL!            // contact@enthalpy.site
+  const FROM = process.env.PILOT_FROM_EMAIL! // noreply@enthalpy.site
+  const ADMIN_TO = process.env.PILOT_TO_EMAIL! // contact@enthalpy.site
 
   // 1) Email admin (reçoit les données)
   await resend.emails.send({
     from: FROM,
     to: [ADMIN_TO],
     subject: `New form submission${name ? ` — ${name}` : ""}`,
-    reply_to: isEmail(visitorEmail) ? visitorEmail : ADMIN_TO,
+    replyTo: isEmail(visitorEmail) ? visitorEmail : ADMIN_TO,
     text: `Name: ${name}\nEmail: ${visitorEmail}\n\nMessage:\n${message}\n`,
   })
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     await resend.emails.send({
       from: FROM,
       to: [visitorEmail],
-      reply_to: ADMIN_TO,
+      replyTo: ADMIN_TO,
       subject: "We received your request — Enthalpy",
       text: `Hi ${name || ""},\n\nThanks! We received your message and will reply shortly.\n\n— Enthalpy\n`,
     })
