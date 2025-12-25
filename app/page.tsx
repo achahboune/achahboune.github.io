@@ -461,6 +461,7 @@ export default function Page() {
       </section>
 
       {/* --- FOOTER --- */}
+      <a href="/privacy" style={{ color: "rgba(255,255,255,0.7)" }}>Privacy Policy</a>
       <footer className="py-12 border-t border-white/5 bg-[#010409]">
         <div className="container mx-auto px-6 flex flex-col justify-center items-center gap-6 text-center">
           <div className="flex items-center gap-2 mb-4">
